@@ -10,6 +10,10 @@ class OrderRefill extends Model
 {
     protected $guarded = ['id'];
 
+    protected $attributes = [
+        'status' => 'pending',
+    ];
+
     protected function casts(): array
     {
         return [

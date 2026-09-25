@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
-enum TicketCategory: string
+use Filament\Support\Contracts\HasLabel;
+
+enum TicketCategory: string implements HasLabel
 {
     case Refill = 'refill';
     case Cancel = 'cancel';
@@ -14,5 +16,16 @@ enum TicketCategory: string
     public function requiresOrders(): bool
     {
         return in_array($this, [self::Refill, self::Cancel, self::SpeedUp], true);
+    }
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Refill => 'Refill',
+            self::Cancel => 'Huỷ đơn',
+            self::SpeedUp => 'Tăng tốc',
+            self::Payment => 'Thanh toán',
+            self::Other => 'Khác',
+        };
     }
 }

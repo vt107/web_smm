@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,10 +14,21 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /** Giá trị mặc định (khớp default trong migration) để model mới tạo có sẵn trong bộ nhớ. */
+    protected $attributes = [
+        'role' => 'user',
+        'status' => 'active',
+        'balance' => '0',
+        'total_spent' => '0',
+        'currency' => 'USD',
+        'timezone' => 'Asia/Ho_Chi_Minh',
+        'locale' => 'vi',
+    ];
 
     /**
      * balance, total_spent, api_key_* cố ý không nằm trong fillable:
@@ -96,6 +109,12 @@ class User extends Authenticatable
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    /** Chỉ admin đang hoạt động được vào trang quản trị Filament. */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->isAdmin() && $this->isActive();
     }
 
     public function isAdmin(): bool

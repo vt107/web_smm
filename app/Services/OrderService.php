@@ -98,7 +98,7 @@ class OrderService
         $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $text)), fn ($l) => $l !== ''));
 
         if (count($lines) > self::MASS_ORDER_MAX_LINES) {
-            throw new SmmException('Maximum '.self::MASS_ORDER_MAX_LINES.' orders per request');
+            throw new SmmException('Maximum :max orders per request', ['max' => self::MASS_ORDER_MAX_LINES]);
         }
 
         $results = [];
@@ -115,7 +115,7 @@ class OrderService
 
                 $results[] = ['line' => $i + 1, 'order' => $order->id, 'error' => null];
             } catch (SmmException $e) {
-                $results[] = ['line' => $i + 1, 'order' => null, 'error' => $e->getMessage()];
+                $results[] = ['line' => $i + 1, 'order' => null, 'error' => $e->localized()];
             }
         }
 
@@ -271,6 +271,43 @@ class OrderService
         return $updated;
     }
 
+    /** Admin hoàn toàn bộ phần tiền chưa hoàn, kể cả đơn đã kết thúc → trạng thái refunded. */
+    public function refundByAdmin(Order $order): Order
+    {
+        return DB::transaction(function () use ($order) {
+            /** @var Order $locked */
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->id);
+
+            if ($locked->status === OrderStatus::Refunded) {
+                return $locked;
+            }
+
+            $delta = Money::sub($locked->charge, $locked->refunded_amount);
+
+            if (Money::isPositive($delta)) {
+                $this->balance->change($locked->user_id, $delta, TransactionType::Refund, $locked, "Refund order #{$locked->id}");
+                $locked->refunded_amount = $locked->charge;
+            }
+
+            $locked->status = OrderStatus::Refunded;
+            $locked->save();
+
+            return $locked;
+        });
+    }
+
+    /** Admin gửi lại đơn chưa gửi được sang provider (đặt lại số lần thử). */
+    public function resend(Order $order): void
+    {
+        if ($order->status !== OrderStatus::Pending || $order->isSentToProvider() || $order->service->isManual()) {
+            throw new SmmException('Only pending orders that were not sent can be resent');
+        }
+
+        $order->forceFill(['send_attempts' => 0, 'provider_error' => null, 'cancel_requested_at' => null])->save();
+
+        SendOrderToProvider::dispatch($order->id);
+    }
+
     private function finalize(Order $order, OrderStatus $status, int $total): void
     {
         if (in_array($status, [OrderStatus::Completed, OrderStatus::Partial], true)) {
@@ -365,11 +402,11 @@ class OrderService
             : (int) $data['quantity'];
 
         if ($quantity < $service->min) {
-            throw new SmmException("Quantity less than minimal {$service->min}");
+            throw new SmmException('Quantity less than minimal :min', ['min' => $service->min]);
         }
 
         if ($quantity > $service->max) {
-            throw new SmmException("Quantity more than maximal {$service->max}");
+            throw new SmmException('Quantity more than maximal :max', ['max' => $service->max]);
         }
 
         return $quantity;

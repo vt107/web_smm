@@ -40,7 +40,10 @@ class DepositService
         }
 
         if (Money::cmp($usdAmount, $method->min_amount) < 0 || Money::cmp($usdAmount, $method->max_amount) > 0) {
-            throw new SmmException("Amount must be between {$method->min_amount} and {$method->max_amount} USD");
+            throw new SmmException('Amount must be between :min and :max USD', [
+                'min' => Money::format($method->min_amount),
+                'max' => Money::format($method->max_amount),
+            ]);
         }
 
         $base = Money::mul($usdAmount, $method->exchange_rate);

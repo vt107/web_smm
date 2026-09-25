@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum TransactionType: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum TransactionType: string implements HasColor, HasLabel
 {
     case Deposit = 'deposit';
     case DepositBonus = 'deposit_bonus';
@@ -17,5 +20,33 @@ enum TransactionType: string
     public function affectsSpent(): bool
     {
         return in_array($this, [self::Order, self::Refund, self::PartialRefund], true);
+    }
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Deposit => 'Nạp tiền',
+            self::DepositBonus => 'Bonus nạp',
+            self::Order => 'Đặt đơn',
+            self::Refund => 'Hoàn tiền',
+            self::PartialRefund => 'Hoàn một phần',
+            self::AdminAdd => 'Admin cộng',
+            self::AdminDeduct => 'Admin trừ',
+            self::Referral => 'Hoa hồng',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Deposit => 'success',
+            self::DepositBonus => 'success',
+            self::Order => 'gray',
+            self::Refund => 'info',
+            self::PartialRefund => 'info',
+            self::AdminAdd => 'warning',
+            self::AdminDeduct => 'danger',
+            self::Referral => 'success',
+        };
     }
 }

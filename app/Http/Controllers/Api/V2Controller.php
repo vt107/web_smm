@@ -35,6 +35,9 @@ class V2Controller extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
+        // API luôn trả tiếng Anh, kể cả thông báo validate.
+        app()->setLocale('en');
+
         $user = User::findByApiKey($request->input('key'));
         $action = (string) $request->input('action');
         $error = null;
@@ -225,7 +228,7 @@ class V2Controller extends Controller
         }
 
         if (count($ids) > $max) {
-            throw new SmmException("Maximum {$max} IDs per request");
+            throw new SmmException('Maximum :max IDs per request', ['max' => $max]);
         }
 
         return $ids;

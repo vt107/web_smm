@@ -22,6 +22,16 @@ class Level extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Chỉ 1 cấp được đánh dấu mặc định.
+        static::saved(function (Level $level) {
+            if ($level->is_default) {
+                static::query()->whereKeyNot($level->id)->where('is_default', true)->update(['is_default' => false]);
+            }
+        });
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

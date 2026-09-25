@@ -34,9 +34,20 @@ class Currency extends Model
         return Money::ceil(Money::mul($usd, $this->rate, 12), $this->decimals);
     }
 
-    public function format(string|int|float $usd): string
+    /** @param  bool  $roundUp  làm tròn lên (giá) hay làm tròn thường (số dư, tiền đã trừ) */
+    public function format(string|int|float $usd, bool $roundUp = true): string
     {
-        $value = number_format((float) $this->fromUsd($usd), $this->decimals, '.', ',');
+        $converted = $roundUp
+            ? $this->fromUsd($usd)
+            : Money::round(Money::mul($usd, $this->rate, 12), $this->decimals);
+
+        [$thousands, $decimal] = $this->code === 'VND' ? ['.', ','] : [',', '.'];
+        $value = number_format((float) $converted, $this->decimals, $decimal, $thousands);
+
+        // Bỏ số 0 thừa ở cuối nhưng giữ tối thiểu 2 chữ số lẻ: $1.0000 → $1.00, $0.0012 giữ nguyên.
+        if ($this->decimals > 2) {
+            $value = preg_replace('/(\\'.$decimal.'\\d{2}\\d*?)0+$/', '$1', $value);
+        }
 
         return $this->symbol_position === 'after' ? "{$value} {$this->symbol}" : "{$this->symbol}{$value}";
     }

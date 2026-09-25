@@ -13,6 +13,14 @@ class Order extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'status' => 'pending',
+        'source' => 'web',
+        'discount_percent' => '0',
+        'refunded_amount' => '0',
+        'send_attempts' => 0,
+    ];
+
     protected $fillable = ['admin_note'];
 
     protected function casts(): array

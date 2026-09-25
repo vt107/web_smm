@@ -2,13 +2,14 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasLabel;
 use Illuminate\Support\Str;
 
 /**
  * Loại dịch vụ theo chuẩn PerfectPanel. Mỗi loại quyết định tham số bắt buộc khi đặt đơn
  * (lưu vào orders.extra) và cách tính số lượng.
  */
-enum ServiceType: string
+enum ServiceType: string implements HasLabel
 {
     case Default = 'default';
     case Package = 'package';
@@ -37,6 +38,11 @@ enum ServiceType: string
             self::Poll => 'Poll',
             self::WebTraffic => 'Web Traffic',
         };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
     }
 
     /** Gói cố định: không nhập số lượng, giá = rate (không chia 1000). */
@@ -95,6 +101,47 @@ enum ServiceType: string
                 'type_of_traffic' => ['nullable', 'string', 'max:50'],
                 'google_keyword' => ['nullable', 'string', 'max:255'],
                 'referring_url' => ['nullable', 'url', 'max:1000'],
+            ],
+        };
+    }
+
+    /**
+     * Mô tả ô nhập thêm cho form đặt đơn trên web (khớp với extraRules()).
+     *
+     * @return list<array{name: string, label: string, input: string, required: bool, hint: ?string}>
+     */
+    public function formFields(): array
+    {
+        $field = fn (string $name, string $label, string $input = 'text', bool $required = true, ?string $hint = null) => compact('name', 'label', 'input', 'required', 'hint');
+
+        return match ($this) {
+            self::Default, self::Package => [],
+            self::CustomComments, self::CustomCommentsPackage => [
+                $field('comments', 'Danh sách bình luận', 'textarea', hint: 'Mỗi dòng 1 bình luận'),
+            ],
+            self::MentionsCustomList => [
+                $field('usernames', 'Danh sách username', 'textarea', hint: 'Mỗi dòng 1 username'),
+            ],
+            self::MentionsWithHashtags => [
+                $field('usernames', 'Danh sách username', 'textarea', hint: 'Mỗi dòng 1 username'),
+                $field('hashtags', 'Hashtag', 'textarea', hint: 'Mỗi dòng 1 hashtag'),
+            ],
+            self::MentionsUserFollowers, self::CommentLikes => [
+                $field('username', 'Username'),
+            ],
+            self::CommentReplies => [
+                $field('username', 'Username'),
+                $field('comments', 'Danh sách trả lời', 'textarea', hint: 'Mỗi dòng 1 câu trả lời'),
+            ],
+            self::Poll => [
+                $field('answer_number', 'Số thứ tự đáp án', 'number'),
+            ],
+            self::WebTraffic => [
+                $field('country', 'Quốc gia', required: false),
+                $field('device', 'Thiết bị', required: false),
+                $field('type_of_traffic', 'Loại traffic', required: false),
+                $field('google_keyword', 'Từ khoá Google', required: false),
+                $field('referring_url', 'URL giới thiệu', required: false),
             ],
         };
     }

@@ -7,11 +7,16 @@ Thiết kế database: [docs/database-design.md](docs/database-design.md).
 
 ```bash
 cp .env.example .env            # lần đầu
-docker compose up -d            # app :8000, MySQL :3307, queue worker, scheduler
+docker compose up -d            # app :8088, MySQL :3307, queue worker, scheduler
 docker compose exec app composer install
 docker compose exec app php artisan key:generate   # lần đầu
 docker compose exec app php artisan migrate --seed
+docker compose exec app php artisan storage:link  # ảnh đính kèm ticket
+npm install && npm run build                      # CSS/JS giao diện khách (dev: npm run dev)
 ```
+
+- Web khách: http://localhost:8088 (đăng ký / đăng nhập bằng email hoặc username)
+- Trang admin (Filament): http://localhost:8088/admin — chỉ tài khoản `role = admin`
 
 Seeder tạo cấp bậc, tiền tệ (USD/VND/THB), 3 kênh nạp (SePay, USDT TRC20, USDT BEP20) và tài khoản admin
 (`ADMIN_EMAIL` / `ADMIN_PASSWORD`; bỏ trống password thì mật khẩu ngẫu nhiên được in ra khi seed).
@@ -36,6 +41,17 @@ docker compose exec app php artisan test
 | `app/Http/Controllers/Webhooks/SepayWebhookController.php` | Webhook SePay |
 | `app/Jobs/` | Gửi đơn / huỷ / refill sang provider (chạy trong queue) |
 | `app/Console/Commands/` | Lệnh đồng bộ, quét ví, tỉ giá (lịch chạy ở `routes/console.php`) |
+
+## Giao diện
+
+**Web khách** – Blade + Alpine.js + Tailwind (Vite). Mỗi trang là khung Blade trong `resources/views/pages/`,
+dữ liệu lấy qua JSON nội bộ `/ajax/*` (session + CSRF, `app/Http/Controllers/Web/Ajax/`).
+Hàm dùng chung ở `resources/js/app.js`: `api.get/post/put`, `toast()`, `formatMoney()`, `$store.me` (số dư ở header).
+Lỗi nghiệp vụ trả 422 kèm thông báo tiếng Việt (`lang/vi.json`); API khách (`/api/v2`) vẫn trả tiếng Anh.
+
+**Trang admin** – Filament v5 (`app/Filament/`): đơn hàng (cập nhật trạng thái, gửi lại, huỷ/hoàn tiền), refill,
+dịch vụ, danh mục, provider (đồng bộ / import), phiếu nạp, giao dịch tiền vào (gán cho khách), kênh nạp,
+sổ cái, khách hàng (cộng/trừ tiền), cấp bậc, ticket, tiền tệ, API log, cài đặt, dashboard thống kê.
 
 ## Lệnh artisan
 

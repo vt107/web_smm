@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum OrderStatus: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum OrderStatus: string implements HasColor, HasLabel
 {
     case Pending = 'pending';
     case Processing = 'processing';
@@ -48,6 +51,32 @@ enum OrderStatus: string
             'partial' => self::Partial,
             'canceled', 'cancelled', 'refunded' => self::Canceled,
             default => null,
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Pending => 'Chờ xử lý',
+            self::Processing => 'Đang xử lý',
+            self::InProgress => 'Đang chạy',
+            self::Completed => 'Hoàn thành',
+            self::Partial => 'Hoàn thành một phần',
+            self::Canceled => 'Đã huỷ',
+            self::Refunded => 'Đã hoàn tiền',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Pending => 'gray',
+            self::Processing => 'info',
+            self::InProgress => 'info',
+            self::Completed => 'success',
+            self::Partial => 'warning',
+            self::Canceled => 'danger',
+            self::Refunded => 'danger',
         };
     }
 }

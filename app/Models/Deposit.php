@@ -13,6 +13,11 @@ class Deposit extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'status' => 'pending',
+        'bonus' => '0',
+    ];
+
     protected $guarded = ['id'];
 
     protected function casts(): array

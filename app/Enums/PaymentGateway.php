@@ -2,8 +2,18 @@
 
 namespace App\Enums;
 
-enum PaymentGateway: string
+use Filament\Support\Contracts\HasLabel;
+
+enum PaymentGateway: string implements HasLabel
 {
     case Sepay = 'sepay';
     case Crypto = 'crypto';
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Sepay => 'SePay (chuyển khoản)',
+            self::Crypto => 'Crypto (tự quét ví)',
+        };
+    }
 }

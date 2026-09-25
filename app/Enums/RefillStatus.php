@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum RefillStatus: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum RefillStatus: string implements HasColor, HasLabel
 {
     case Pending = 'pending';
     case Processing = 'processing';
@@ -29,6 +32,28 @@ enum RefillStatus: string
             'rejected', 'canceled', 'cancelled' => self::Rejected,
             'error' => self::Error,
             default => null,
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Pending => 'Chờ gửi',
+            self::Processing => 'Đang xử lý',
+            self::Completed => 'Hoàn thành',
+            self::Rejected => 'Bị từ chối',
+            self::Error => 'Lỗi',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Pending => 'gray',
+            self::Processing => 'info',
+            self::Completed => 'success',
+            self::Rejected => 'danger',
+            self::Error => 'danger',
         };
     }
 }
