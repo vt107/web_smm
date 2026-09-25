@@ -4,6 +4,8 @@ namespace App\Providers\Filament;
 
 use App\Filament\NavGroup;
 use App\Support\Site;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\MultiFactor\Email\EmailAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -28,6 +30,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // Trang Profile: đổi mật khẩu + bật bảo mật 2 lớp (không bắt buộc).
+            ->profile(isSimple: false)
+            ->multiFactorAuthentication([
+                AppAuthentication::make()->recoverable(),
+                EmailAuthentication::make(),
+            ])
             ->brandName(fn () => Site::name())
             ->brandLogo(fn () => view('filament.brand'))
             ->brandLogoHeight('2rem')

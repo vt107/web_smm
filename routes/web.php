@@ -10,8 +10,10 @@ use App\Http\Controllers\Web\Ajax\DepositController;
 use App\Http\Controllers\Web\Ajax\OrderController;
 use App\Http\Controllers\Web\Ajax\TicketController;
 use App\Http\Controllers\Web\Ajax\TransactionController;
+use App\Http\Controllers\Web\Ajax\TwoFactorController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\PasswordResetController;
+use App\Http\Controllers\Web\TwoFactorChallengeController;
 use Illuminate\Support\Facades\Route;
 
 // Trang công khai (không cần đăng nhập).
@@ -32,6 +34,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showReset'])->name('password.reset');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1')->name('password.update');
+
+    Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'verify'])->middleware('throttle:10,1')->name('two-factor.verify');
+    Route::post('/two-factor-challenge/email', [TwoFactorChallengeController::class, 'sendEmailCode'])->middleware('throttle:5,1')->name('two-factor.email');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
@@ -58,6 +64,17 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::put('/account', [AccountController::class, 'update']);
         Route::put('/account/password', [AccountController::class, 'password']);
         Route::post('/account/api-key', [AccountController::class, 'apiKey'])->middleware('throttle:5,1');
+
+        Route::prefix('two-factor')->middleware('throttle:20,1')->controller(TwoFactorController::class)->group(function () {
+            Route::get('/', 'status');
+            Route::post('/app/setup', 'setupApp');
+            Route::post('/app/enable', 'enableApp');
+            Route::post('/app/disable', 'disableApp');
+            Route::post('/recovery-codes', 'regenerateRecoveryCodes');
+            Route::post('/email/send', 'sendEmailCode');
+            Route::post('/email/enable', 'enableEmail');
+            Route::post('/email/disable', 'disableEmail');
+        });
 
         Route::get('/services', [CatalogController::class, 'services']);
         Route::get('/updates', [CatalogController::class, 'updates']);

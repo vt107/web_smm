@@ -16,6 +16,7 @@ use App\Filament\Support\Fmt;
 use App\Models\Currency;
 use App\Models\User;
 use App\Services\BalanceService;
+use App\Services\TwoFactorService;
 use App\Support\Money;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -27,6 +28,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -83,6 +85,9 @@ class UserResource extends Resource
                 TextColumn::make('total_spent')->label('Spent')->formatStateUsing(fn ($state) => Fmt::usd($state))->sortable(),
                 TextColumn::make('role')->label('Role')->badge()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')->label('Status')->badge(),
+                IconColumn::make('two_factor')->label('2FA')->boolean()
+                    ->state(fn (User $record) => $record->hasTwoFactorEnabled())
+                    ->toggleable(),
                 TextColumn::make('created_at')->label('Registered')->since()->sortable(),
             ])
             ->filters([
@@ -93,7 +98,24 @@ class UserResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 self::adjustBalanceAction(),
+                self::resetTwoFactorAction(),
             ]);
+    }
+
+    /** Tắt toàn bộ 2FA cho khách (mất điện thoại + mất mã khôi phục). */
+    public static function resetTwoFactorAction(): Action
+    {
+        return Action::make('resetTwoFactor')
+            ->label('Reset 2FA')
+            ->icon(Heroicon::OutlinedShieldExclamation)
+            ->color('danger')
+            ->visible(fn (User $record) => $record->hasTwoFactorEnabled())
+            ->requiresConfirmation()
+            ->modalDescription('Turns off the authenticator app and email codes for this customer. Only do this after verifying their identity.')
+            ->action(function (User $record) {
+                app(TwoFactorService::class)->reset($record);
+                Notification::make()->success()->title('Two-factor authentication has been reset')->send();
+            });
     }
 
     public static function adjustBalanceAction(): Action

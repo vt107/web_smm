@@ -5,6 +5,12 @@ namespace App\Models;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\Email\Concerns\InteractsWithEmailAuthentication;
+use Filament\Auth\MultiFactor\Email\Contracts\HasEmailAuthentication;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +20,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasEmailAuthentication
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    // Bảo mật 2 lớp: cùng cột và định dạng cho web khách (TwoFactorService) và admin Filament.
+    use InteractsWithAppAuthentication, InteractsWithAppAuthenticationRecovery, InteractsWithEmailAuthentication;
 
     /** Giá trị mặc định (khớp default trong migration) để model mới tạo có sẵn trong bộ nhớ. */
     protected $attributes = [
@@ -28,6 +37,7 @@ class User extends Authenticatable implements FilamentUser
         'currency' => 'USD',
         'timezone' => 'Asia/Ho_Chi_Minh',
         'locale' => 'en',
+        'has_email_authentication' => false,
     ];
 
     /**
@@ -109,6 +119,11 @@ class User extends Authenticatable implements FilamentUser
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return filled($this->app_authentication_secret) || $this->has_email_authentication;
     }
 
     /** Chỉ admin đang hoạt động được vào trang quản trị Filament. */

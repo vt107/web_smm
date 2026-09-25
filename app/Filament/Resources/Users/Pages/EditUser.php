@@ -12,7 +12,7 @@ class EditUser extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [UserResource::adjustBalanceAction()];
+        return [UserResource::adjustBalanceAction(), UserResource::resetTwoFactorAction()];
     }
 
     /** role / status / level_id cố ý không nằm trong $fillable của User nên gán bằng forceFill. */
