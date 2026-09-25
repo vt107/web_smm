@@ -3,11 +3,13 @@
 namespace App\Jobs;
 
 use App\Enums\OrderStatus;
+use App\Enums\TelegramEvent;
 use App\Exceptions\ProviderException;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Services\OrderService;
 use App\Services\Providers\ProviderManager;
+use App\Services\TelegramNotifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
@@ -87,6 +89,13 @@ class SendOrderToProvider implements ShouldQueue
 
         if ($attempts >= (int) Setting::get('order_max_send_attempts')) {
             $orders->applyStatus($order, OrderStatus::Canceled);
+
+            app(TelegramNotifier::class)->notify(TelegramEvent::OrderFailed, implode("\n", [
+                "❌ <b>Order #{$order->id} canceled</b> – provider rejected it {$attempts} times (customer refunded)",
+                'Provider: '.e($order->provider?->name ?? '—').' · service #'.$order->service_id,
+                'Error: '.e(Str::limit($error, 200)),
+                url("/admin/orders/{$order->id}"),
+            ]));
 
             return null;
         }

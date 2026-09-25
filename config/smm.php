@@ -98,6 +98,11 @@ return [
         'mail_from_address' => null,
         'mail_from_name' => null,
 
+        // Thông báo Telegram cho admin.
+        'telegram_bot_token' => null, // lưu dạng mã hoá (Crypt)
+        'telegram_chat_ids' => null,  // mỗi dòng 1 chat ID
+        'telegram_events' => ['deposit_completed', 'unmatched_transfer', 'ticket', 'order_failed', 'provider_low_balance', 'provider_error'],
+
         // Trang pháp lý (Markdown). {site_name} và {support_email} được thay tự động.
         'terms_content' => <<<'MD'
 ## 1. Acceptance of terms

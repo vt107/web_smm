@@ -2,13 +2,16 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\TelegramEvent;
 use App\Filament\NavGroup;
 use App\Http\Controllers\Public\LandingController;
 use App\Models\Setting;
+use App\Services\TelegramNotifier;
 use App\Support\MailSettings;
 use App\Support\Site;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
@@ -24,10 +27,12 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\HtmlString;
 use Throwable;
 use UnitEnum;
 
@@ -54,12 +59,31 @@ class WebsiteSettings extends Page
             ->mapWithKeys(fn (string $key) => [$key => Site::get($key)])
             // Không đổ mật khẩu SMTP (đã mã hoá) ra form; chỉ lưu khi nhập mới.
             ->put('mail_password', null)
+            ->put('telegram_bot_token', null)
             ->all());
     }
 
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('testTelegram')
+                ->label('Send test Telegram message')
+                ->icon(Heroicon::OutlinedChatBubbleOvalLeftEllipsis)
+                ->color('gray')
+                ->action(function (TelegramNotifier $telegram) {
+                    if (! $telegram->isConfigured()) {
+                        Notification::make()->warning()->title('Please fill in and save the Telegram bot token and chat IDs first.')->send();
+
+                        return;
+                    }
+
+                    try {
+                        $telegram->sendNow('✅ <b>'.e(Site::name()).'</b>'."\n".'Test message – Telegram notifications are working.');
+                        Notification::make()->success()->title('Test message sent to '.count($telegram->chatIds()).' chat(s)')->send();
+                    } catch (Throwable $e) {
+                        Notification::make()->danger()->title('Could not send Telegram message')->body($e->getMessage())->persistent()->send();
+                    }
+                }),
             Action::make('testEmail')
                 ->label('Send test email')
                 ->icon(Heroicon::OutlinedPaperAirplane)
@@ -161,6 +185,52 @@ class WebsiteSettings extends Page
                                 ->placeholder(fn () => Site::name()),
                         ]),
                 ]),
+                Tab::make('Telegram')->icon(Heroicon::OutlinedBellAlert)->schema([
+                    Section::make('Telegram notifications for admins')
+                        ->description(new HtmlString(
+                            '1. In Telegram, open <b>@BotFather</b>, send <code>/newbot</code> and copy the bot token.<br>'
+                            .'2. Paste the token below and click <b>Save changes</b>.<br>'
+                            .'3. Send any message to your bot (or add the bot to a group and send a message there).<br>'
+                            .'4. Click <b>Find chat IDs</b>, add the IDs, save, then click <b>Send test Telegram message</b> at the top.'
+                        ))
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('telegram_bot_token')->label('Bot token')->password()->revealable()
+                                ->placeholder('123456789:AA...')
+                                ->helperText(fn () => Site::get('telegram_bot_token') ? 'A token is saved. Leave empty to keep it.' : null),
+                            Textarea::make('telegram_chat_ids')->label('Chat IDs')->rows(3)
+                                ->placeholder("123456789\n-1001234567890")
+                                ->helperText('One per line. Group IDs start with -100.')
+                                ->hintAction(
+                                    Action::make('findChats')
+                                        ->label('Find chat IDs')
+                                        ->icon(Heroicon::OutlinedMagnifyingGlass)
+                                        ->action(function (TelegramNotifier $telegram, Get $get) {
+                                            try {
+                                                $token = filled($get('telegram_bot_token')) ? trim($get('telegram_bot_token')) : null;
+                                                $chats = $telegram->discoverChats($token);
+                                            } catch (Throwable $e) {
+                                                Notification::make()->danger()->title('Could not reach Telegram')->body($e->getMessage())->send();
+
+                                                return;
+                                            }
+
+                                            if ($chats === []) {
+                                                Notification::make()->warning()->title('No chats found yet')
+                                                    ->body('Send a message to your bot first, then try again.')->send();
+
+                                                return;
+                                            }
+
+                                            Notification::make()->success()->title('Chats that messaged your bot')->persistent()
+                                                ->body(collect($chats)->map(fn (array $c) => "{$c['id']} – {$c['name']} ({$c['type']})")->implode("\n"))
+                                                ->send();
+                                        }),
+                                ),
+                            CheckboxList::make('telegram_events')->label('Send a message when…')->columnSpanFull()
+                                ->options(TelegramEvent::class),
+                        ]),
+                ]),
                 Tab::make('Legal pages')->icon(Heroicon::OutlinedScale)->schema([
                     Section::make()
                         ->description('Shown at /terms and /privacy and linked in the footer. {site_name} and {support_email} are replaced automatically.')
@@ -199,12 +269,12 @@ class WebsiteSettings extends Page
     public function save(): void
     {
         foreach ($this->form->getState() as $key => $value) {
-            if ($key === 'mail_password') {
+            if (in_array($key, ['mail_password', 'telegram_bot_token'], true)) {
                 if (blank($value)) {
-                    continue; // giữ mật khẩu đã lưu
+                    continue; // giữ giá trị đã lưu
                 }
 
-                $value = MailSettings::encryptPassword($value);
+                $value = $key === 'mail_password' ? MailSettings::encryptPassword($value) : TelegramNotifier::encryptToken($value);
             }
 
             Setting::set("site.{$key}", $value === '' ? null : $value);

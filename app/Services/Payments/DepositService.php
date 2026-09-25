@@ -6,6 +6,7 @@ use App\Enums\ActiveStatus;
 use App\Enums\DepositMatchedBy;
 use App\Enums\DepositStatus;
 use App\Enums\PaymentGateway;
+use App\Enums\TelegramEvent;
 use App\Enums\TransactionType;
 use App\Enums\TransferStatus;
 use App\Exceptions\SmmException;
@@ -15,6 +16,7 @@ use App\Models\PaymentMethod;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\BalanceService;
+use App\Services\TelegramNotifier;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +28,10 @@ use Illuminate\Support\Facades\DB;
  */
 class DepositService
 {
-    public function __construct(private readonly BalanceService $balance) {}
+    public function __construct(
+        private readonly BalanceService $balance,
+        private readonly TelegramNotifier $telegram,
+    ) {}
 
     /**
      * Tạo phiếu nạp. $usdAmount là số USD khách muốn nạp.
@@ -106,17 +111,21 @@ class DepositService
         if ($method->gateway === PaymentGateway::Sepay) {
             $prefix = preg_quote(config('smm.deposits.code_prefix'), '/');
 
-            if (! preg_match("/{$prefix}\d+/i", (string) $transfer->content, $m)) {
-                return null;
-            }
-
-            $deposit = $candidates->where('code', strtoupper($m[0]))->first();
+            $deposit = preg_match("/{$prefix}\d+/i", (string) $transfer->content, $m)
+                ? $candidates->where('code', strtoupper($m[0]))->first()
+                : null;
         } else {
             $matches = $candidates->where('paid_amount', Money::round($transfer->amount))->limit(2)->get();
             $deposit = $matches->count() === 1 ? $matches->first() : null;
         }
 
-        return $deposit ? $this->complete($deposit, $transfer, DepositMatchedBy::Auto) : null;
+        if (! $deposit) {
+            $this->notifyUnmatched($transfer);
+
+            return null;
+        }
+
+        return $this->complete($deposit, $transfer, DepositMatchedBy::Auto);
     }
 
     /**
@@ -220,8 +229,29 @@ class DepositService
                 $this->balance->change($deposit->user_id, $bonus, TransactionType::DepositBonus, $deposit, "Bonus {$method->bonus_percent}% deposit #{$deposit->code}");
             }
 
+            $this->telegram->notify(TelegramEvent::DepositCompleted, implode("\n", array_filter([
+                '💰 <b>Deposit received</b>',
+                'Customer: '.e($deposit->user->username),
+                'Amount: $'.Money::format($amount).(Money::isPositive($bonus) ? ' (+$'.Money::format($bonus).' bonus)' : ''),
+                'Paid: '.Money::format($received).' '.e($deposit->paid_currency).' via '.e($method->name),
+                'Code: '.e($deposit->code).($by === DepositMatchedBy::Auto ? '' : ' · matched by '.$by->getLabel()),
+            ])));
+
             return $deposit;
         });
+    }
+
+    private function notifyUnmatched(IncomingTransfer $transfer): void
+    {
+        $method = $transfer->paymentMethod;
+
+        $this->telegram->notify(TelegramEvent::UnmatchedTransfer, implode("\n", array_filter([
+            '⚠️ <b>Payment not matched to any deposit</b>',
+            'Amount: '.Money::format($transfer->amount).' '.e($method->currency).' via '.e($method->name),
+            $transfer->content ? 'Description: '.e(mb_strimwidth($transfer->content, 0, 120, '…')) : null,
+            'Transaction: '.e($transfer->external_id),
+            'Assign it to a customer: '.url('/admin/incoming-transfers'),
+        ])), dedupeKey: "transfer:{$transfer->id}", dedupeMinutes: 60 * 24 * 30);
     }
 
     /** Chuyển phiếu quá hạn sang expired. Phiếu expired vẫn khớp được trong deposit_claim_window_hours. */

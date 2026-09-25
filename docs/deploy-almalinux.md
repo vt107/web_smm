@@ -370,6 +370,7 @@ Trong dashboard Cloudflare của tên miền:
    - *General*: tên web, khẩu hiệu, logo, favicon.
    - *SEO*: mô tả, ảnh chia sẻ; bật "Allow search engines" khi sẵn sàng.
    - *Email*: nhập SMTP → **Save** → bấm **Send test email** (cần cho chức năng quên mật khẩu).
+   - *Telegram*: bot token (tạo bằng @BotFather) → Save → nhắn 1 tin cho bot → **Find chat IDs** → điền chat ID → Save → **Send test Telegram message**. Chọn các loại thông báo muốn nhận.
    - *Legal pages*, *Landing page*, *Contact & footer*.
 2. **Services → Providers** → thêm provider (API URL + key) → **Import new services**.
 3. **Services → Categories / Services**: sắp xếp, sửa tên, giá.

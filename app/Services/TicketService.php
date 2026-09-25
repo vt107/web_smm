@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TelegramEvent;
 use App\Enums\TicketCategory;
 use App\Enums\TicketStatus;
 use App\Exceptions\SmmException;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 class TicketService
 {
     public const MAX_OPEN_TICKETS = 10;
+
+    public function __construct(private readonly TelegramNotifier $telegram) {}
 
     /**
      * @param  list<UploadedFile>  $attachments
@@ -36,6 +39,7 @@ class TicketService
             $ticket->save();
 
             $this->addMessage($ticket, $user, $message, false, $attachments);
+            $this->notifyStaff($ticket, $user, $message, 'New ticket');
 
             return $ticket;
         });
@@ -55,6 +59,10 @@ class TicketService
             $ticket->last_reply_at = now();
             $ticket->save();
 
+            if (! $isStaff) {
+                $this->notifyStaff($ticket, $author, $message, 'Customer replied');
+            }
+
             return $reply;
         });
     }
@@ -63,6 +71,18 @@ class TicketService
     {
         $ticket->status = TicketStatus::Closed;
         $ticket->save();
+    }
+
+    private function notifyStaff(Ticket $ticket, User $author, string $message, string $heading): void
+    {
+        $this->telegram->notify(TelegramEvent::Ticket, implode("\n", array_filter([
+            "🎫 <b>{$heading}</b> #{$ticket->id} · ".e($ticket->category->getLabel()),
+            'Customer: '.e($author->username),
+            'Subject: '.e($ticket->subject),
+            $ticket->order_ids ? 'Orders: '.e($ticket->order_ids) : null,
+            e(mb_strimwidth($message, 0, 300, '…')),
+            url("/admin/tickets/{$ticket->id}"),
+        ])));
     }
 
     /** @param  list<UploadedFile>  $attachments */

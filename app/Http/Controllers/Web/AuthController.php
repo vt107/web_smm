@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\TelegramEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Models\User;
+use App\Services\TelegramNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -96,6 +98,8 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+
+        app(TelegramNotifier::class)->notify(TelegramEvent::NewUser, '👤 <b>New customer</b>: '.e($user->username).' ('.e($user->email).')');
 
         return redirect()->route('dashboard');
     }

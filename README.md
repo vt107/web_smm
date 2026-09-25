@@ -73,7 +73,12 @@ Lỗi nghiệp vụ trả 422 kèm thông báo tiếng Việt (`lang/vi.json`); 
 
 **Cấu hình website (cho người không rành kỹ thuật)** – admin → *System → Website settings*: tên web, khẩu hiệu,
 logo, favicon, tiêu đề/mô tả SEO, ảnh chia sẻ mạng xã hội, bật/tắt cho Google index, Google Analytics ID,
-tiêu đề + mô tả landing page, danh sách FAQ, email/Telegram/WhatsApp, chữ cuối trang.
+tiêu đề + mô tả landing page, danh sách FAQ, email/Telegram/WhatsApp, chữ cuối trang,
+SMTP gửi mail (quên mật khẩu, mã 2FA), nội dung Terms/Privacy, bot Telegram báo tin cho admin
+(nạp tiền, giao dịch chưa khớp, ticket, đơn bị huỷ, số dư provider thấp, lỗi provider, khách mới).
+
+**Bảo mật 2 lớp** (không bắt buộc) – khách bật ở *Account*: app xác thực + mã khôi phục, và/hoặc mã qua email.
+Admin bật ở *Profile* trong trang admin; admin có nút *Reset 2FA* cho khách mất điện thoại.
 Lưu trong bảng `settings` (key `site.*`), đọc qua `App\Support\Site`, mặc định ở `config/smm.php → site`.
 
 **SEO** – landing `/` và `/pricing` render phía server; title, meta description, canonical, Open Graph/Twitter card,
