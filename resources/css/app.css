@@ -67,6 +67,27 @@
     --color-sky-800: oklch(90.1% 0.058 230.902);
 }
 
+/* Tailwind v4 bỏ cursor: pointer mặc định của button → trả lại cho mọi phần tử bấm được. */
+@layer base {
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    [role='radio'],
+    select:not(:disabled),
+    summary,
+    label:has(input[type='checkbox'], input[type='radio']),
+    input[type='checkbox']:not(:disabled),
+    input[type='radio']:not(:disabled),
+    input[type='file']:not(:disabled),
+    input[type='file']::file-selector-button {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    select:disabled {
+        cursor: not-allowed;
+    }
+}
+
 /* Ẩn thanh banner / tooltip mặc định của Google Translate (dùng select riêng ở header). */
 iframe.skiptranslate,
 .skiptranslate > iframe,

@@ -44,16 +44,16 @@
 
         {{-- Header --}}
         <header class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-surface/90 px-4 backdrop-blur lg:px-8">
-            <button class="lg:hidden" @click="sidebar = true" aria-label="Open menu"><x-svg-icon name="menu" class="size-6" /></button>
+            <button class="rounded-lg p-1 text-slate-600 hover:bg-slate-100 lg:hidden dark:text-gray-100 dark:hover:bg-gray-700" @click="sidebar = true" aria-label="Open menu"><x-svg-icon name="menu" class="size-6" /></button>
             <h1 class="flex-1 truncate text-lg font-semibold">{{ $title ?? '' }}</h1>
             <div class="hidden md:block"><x-preferences /></div>
-            <a href="{{ route('add-funds') }}" class="notranslate flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200" translate="no">
-                <x-svg-icon name="wallet" class="size-4 text-slate-500" />
+            <a href="{{ route('add-funds') }}" class="notranslate flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 dark:bg-gray-800 dark:text-white dark:ring-1 dark:ring-gray-600 dark:hover:bg-gray-700" translate="no">
+                <x-svg-icon name="wallet" class="size-4 text-slate-500 dark:text-emerald-400" />
                 <span class="font-semibold" x-data x-text="$store.me.data?.balance ?? @js($user->displayCurrency->format($user->balance, roundUp: false))"></span>
             </a>
             <span class="notranslate hidden rounded-full px-2.5 py-1 text-xs font-semibold text-white sm:inline" translate="no"
                   style="background-color: {{ $user->level->color ?: '#6366f1' }}">{{ $user->level->name }}</span>
-            <span class="notranslate hidden text-sm text-slate-600 xl:inline" translate="no">{{ $user->username }}</span>
+            <span class="notranslate hidden text-sm text-slate-600 xl:inline dark:text-gray-200" translate="no">{{ $user->username }}</span>
         </header>
 
         <main class="mx-auto max-w-7xl p-4 lg:p-8">

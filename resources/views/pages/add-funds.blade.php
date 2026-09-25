@@ -102,7 +102,7 @@
                         <thead><tr><th>Code</th><th>Method</th><th>Amount</th><th>Credited</th><th>Status</th><th>Date</th></tr></thead>
                         <tbody>
                             <template x-for="d in history" :key="d.id">
-                                <tr class="cursor-pointer hover:bg-slate-50" @click="d.status === 'pending' && open(d)">
+                                <tr :class="d.status === 'pending' && 'cursor-pointer hover:bg-slate-50'" @click="d.status === 'pending' && open(d)">
                                     <td class="font-mono" x-text="d.code"></td>
                                     <td x-text="d.method"></td>
                                     <td class="whitespace-nowrap" x-text="d.paid_amount + ' ' + d.paid_currency"></td>
