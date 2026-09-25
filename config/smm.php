@@ -84,6 +84,71 @@ return [
         'telegram_url' => null,
         'whatsapp_url' => null,
         'footer_text' => null,
+
+        // Gửi email (SMTP) – để trống host = không gửi mail thật (ghi vào log).
+        'mail_host' => null,
+        'mail_port' => 587,
+        'mail_security' => 'tls',
+        'mail_username' => null,
+        'mail_password' => null, // lưu dạng mã hoá (Crypt)
+        'mail_from_address' => null,
+        'mail_from_name' => null,
+
+        // Trang pháp lý (Markdown). {site_name} và {support_email} được thay tự động.
+        'terms_content' => <<<'MD'
+## 1. Acceptance of terms
+By creating an account or placing an order on {site_name}, you agree to these Terms of Service.
+
+## 2. Services
+We provide social media marketing services such as followers, likes, views and comments. We do not guarantee any change in engagement, reach or revenue, and we are not affiliated with any social network.
+
+## 3. Your responsibilities
+- Only submit links to public content that you own or are authorized to promote.
+- Do not change your username or make your content private while an order is running.
+- You are responsible for complying with the terms of each social network.
+
+## 4. Payments and refunds
+- Funds added to your balance are non-refundable, except where required by law.
+- Canceled or partially delivered orders are refunded to your balance automatically.
+- Orders cannot be canceled once completed.
+
+## 5. Refills
+Services marked with a refill guarantee can be refilled during the stated period. Refills are not available if the account is private, deleted or renamed.
+
+## 6. Account suspension
+We may suspend accounts that abuse the service, use stolen payment methods or attempt fraud.
+
+## 7. Changes
+We may update these terms at any time. Continued use of the service means you accept the updated terms.
+
+## 8. Contact
+Questions? Contact us at {support_email}.
+MD,
+        'privacy_content' => <<<'MD'
+## 1. Information we collect
+- Account information: name, username, email address and password (stored encrypted).
+- Order information: the links and details you submit when placing orders.
+- Payment information: deposit amounts and transaction IDs. We never store card numbers or bank passwords.
+- Technical information: IP address and browser information for security and fraud prevention.
+
+## 2. How we use your information
+We use your information to provide the service, process orders and payments, prevent fraud and reply to support requests.
+
+## 3. Sharing
+We share order links with our service providers only as needed to deliver your orders. We do not sell your personal information.
+
+## 4. Cookies
+We use essential cookies to keep you signed in and to remember your preferences (theme and language).
+
+## 5. Data retention
+We keep your data while your account is active and as required for accounting and legal purposes.
+
+## 6. Your rights
+You can update your account information at any time. To delete your account, contact us at {support_email}.
+
+## 7. Contact
+Questions about this policy? Contact us at {support_email}.
+MD,
     ],
 
     // Giá trị mặc định cho bảng `settings` (admin chỉnh được lúc chạy).

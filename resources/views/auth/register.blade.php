@@ -17,6 +17,12 @@
                 @error($field)<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         @endforeach
+        <label class="flex items-start gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="terms" value="1" required class="mt-0.5 rounded border-slate-300" @checked(old('terms'))>
+            <span>I agree to the <a href="{{ route('terms') }}" target="_blank" class="font-medium text-indigo-600 hover:underline">Terms of Service</a>
+                and <a href="{{ route('privacy') }}" target="_blank" class="font-medium text-indigo-600 hover:underline">Privacy Policy</a></span>
+        </label>
+        @error('terms')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
         <button class="btn-primary w-full">Create account</button>
     </form>
     <p class="mt-6 text-center text-sm text-slate-600">

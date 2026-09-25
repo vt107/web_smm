@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Public\LandingController;
+use App\Http\Controllers\Public\LegalController;
 use App\Http\Controllers\Public\PricingController;
 use App\Http\Controllers\Public\SeoController;
 use App\Http\Controllers\Web\Ajax\AccountController;
@@ -10,11 +11,14 @@ use App\Http\Controllers\Web\Ajax\OrderController;
 use App\Http\Controllers\Web\Ajax\TicketController;
 use App\Http\Controllers\Web\Ajax\TransactionController;
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\PasswordResetController;
 use Illuminate\Support\Facades\Route;
 
 // Trang công khai (không cần đăng nhập).
 Route::get('/', LandingController::class)->name('home');
 Route::get('/pricing', PricingController::class)->name('pricing');
+Route::get('/terms', [LegalController::class, 'terms'])->name('terms');
+Route::get('/privacy', [LegalController::class, 'privacy'])->name('privacy');
 Route::get('/robots.txt', [SeoController::class, 'robots']);
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 
@@ -23,6 +27,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'showRequest'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1')->name('password.update');
 });
 
 Route::middleware(['auth', 'active'])->group(function () {

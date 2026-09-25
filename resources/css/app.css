@@ -88,6 +88,26 @@
     }
 }
 
+/* Nội dung Markdown của trang Terms / Privacy. */
+.legal {
+    @apply space-y-4 text-slate-700;
+}
+.legal h2 {
+    @apply pt-4 text-xl font-semibold text-slate-900;
+}
+.legal h3 {
+    @apply pt-2 text-lg font-semibold text-slate-900;
+}
+.legal ul {
+    @apply list-disc space-y-1 pl-6;
+}
+.legal ol {
+    @apply list-decimal space-y-1 pl-6;
+}
+.legal a {
+    @apply text-indigo-600 underline;
+}
+
 /* Ẩn thanh banner / tooltip mặc định của Google Translate (dùng select riêng ở header). */
 iframe.skiptranslate,
 .skiptranslate > iframe,

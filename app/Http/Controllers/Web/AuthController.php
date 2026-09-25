@@ -65,7 +65,8 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:191', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
             'ref' => ['nullable', 'string', 'max:20'],
-        ]);
+            'terms' => ['accepted'],
+        ], ['terms.accepted' => 'Please accept the Terms of Service and Privacy Policy.']);
 
         $user = User::query()->create([
             'name' => $data['name'],

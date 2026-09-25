@@ -40,7 +40,7 @@ class WebAppTest extends TestCase
 
         $this->post('/register', [
             'name' => 'John Doe', 'username' => 'nguyenvana', 'email' => 'a@example.com',
-            'password' => 'secret123', 'password_confirmation' => 'secret123', 'ref' => $referrer->ref_code,
+            'password' => 'secret123', 'password_confirmation' => 'secret123', 'ref' => $referrer->ref_code, 'terms' => '1',
         ])->assertRedirect('/dashboard');
 
         $user = User::query()->where('username', 'nguyenvana')->sole();

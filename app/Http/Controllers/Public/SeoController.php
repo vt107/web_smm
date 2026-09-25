@@ -34,6 +34,8 @@ class SeoController extends Controller
             ['loc' => route('pricing'), 'priority' => '0.9', 'changefreq' => 'daily'],
             ['loc' => route('register'), 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['loc' => route('login'), 'priority' => '0.3', 'changefreq' => 'monthly'],
+            ['loc' => route('terms'), 'priority' => '0.2', 'changefreq' => 'yearly'],
+            ['loc' => route('privacy'), 'priority' => '0.2', 'changefreq' => 'yearly'],
         ];
 
         $lastmod = now()->toDateString();

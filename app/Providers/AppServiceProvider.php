@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Deposit;
 use App\Models\Order;
 use App\Models\User;
+use App\Support\MailSettings;
 use App\Support\Site;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Tên web do admin đặt (Website settings) dùng cho toàn hệ thống: tiêu đề trang, email, admin.
         config(['app.name' => Site::name()]);
+        MailSettings::apply();
 
         // Lưu tên ngắn thay cho tên class trong transactions.reference_type.
         Relation::enforceMorphMap([

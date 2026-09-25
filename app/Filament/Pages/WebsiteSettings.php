@@ -5,11 +5,14 @@ namespace App\Filament\Pages;
 use App\Filament\NavGroup;
 use App\Http\Controllers\Public\LandingController;
 use App\Models\Setting;
+use App\Support\MailSettings;
 use App\Support\Site;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -24,6 +27,8 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 use UnitEnum;
 
 /**
@@ -47,7 +52,39 @@ class WebsiteSettings extends Page
     {
         $this->form->fill(collect(array_keys(config('smm.site')))
             ->mapWithKeys(fn (string $key) => [$key => Site::get($key)])
+            // Không đổ mật khẩu SMTP (đã mã hoá) ra form; chỉ lưu khi nhập mới.
+            ->put('mail_password', null)
             ->all());
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('testEmail')
+                ->label('Send test email')
+                ->icon(Heroicon::OutlinedPaperAirplane)
+                ->color('gray')
+                ->schema([
+                    TextInput::make('to')->label('Send to')->email()->required()->default(fn () => auth()->user()->email),
+                ])
+                ->action(function (array $data) {
+                    if (! MailSettings::isConfigured()) {
+                        Notification::make()->warning()->title('Please fill in and save the Email (SMTP) settings first.')->send();
+
+                        return;
+                    }
+
+                    try {
+                        MailSettings::apply();
+                        Mail::raw('This is a test email from '.Site::name().'. Your email settings are working.', function ($message) use ($data) {
+                            $message->to($data['to'])->subject('Test email from '.Site::name());
+                        });
+                        Notification::make()->success()->title('Test email sent to '.$data['to'])->send();
+                    } catch (Throwable $e) {
+                        Notification::make()->danger()->title('Could not send email')->body($e->getMessage())->persistent()->send();
+                    }
+                }),
+        ];
     }
 
     public function form(Schema $schema): Schema
@@ -103,6 +140,37 @@ class WebsiteSettings extends Page
                             ]),
                     ]),
                 ]),
+                Tab::make('Email')->icon(Heroicon::OutlinedEnvelope)->schema([
+                    Section::make('Outgoing email (SMTP)')
+                        ->description('Used for password reset emails. Get these details from your email provider (Gmail, Zoho, Mailgun, SendGrid…). Save, then click "Send test email" at the top.')
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('mail_host')->label('SMTP server')->placeholder('smtp.gmail.com')
+                                ->helperText('Leave empty to disable sending emails.'),
+                            TextInput::make('mail_port')->label('Port')->integer()->placeholder('587'),
+                            Select::make('mail_security')->label('Security')->options([
+                                'tls' => 'TLS / STARTTLS (usually port 587)',
+                                'ssl' => 'SSL (usually port 465)',
+                            ])->default('tls'),
+                            TextInput::make('mail_username')->label('Username')->placeholder('you@example.com'),
+                            TextInput::make('mail_password')->label('Password')->password()->revealable()
+                                ->helperText(fn () => Site::get('mail_password') ? 'A password is saved. Leave empty to keep it.' : 'For Gmail, use an "App password".'),
+                            TextInput::make('mail_from_address')->label('Sender email')->email()
+                                ->helperText('Leave empty to use the username.'),
+                            TextInput::make('mail_from_name')->label('Sender name')
+                                ->placeholder(fn () => Site::name()),
+                        ]),
+                ]),
+                Tab::make('Legal pages')->icon(Heroicon::OutlinedScale)->schema([
+                    Section::make()
+                        ->description('Shown at /terms and /privacy and linked in the footer. {site_name} and {support_email} are replaced automatically.')
+                        ->schema([
+                            MarkdownEditor::make('terms_content')->label('Terms of Service')->required()
+                                ->toolbarButtons([['heading', 'bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']]),
+                            MarkdownEditor::make('privacy_content')->label('Privacy Policy')->required()
+                                ->toolbarButtons([['heading', 'bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']]),
+                        ]),
+                ]),
                 Tab::make('Contact & footer')->icon(Heroicon::OutlinedChatBubbleLeftRight)->schema([
                     Section::make()->columns(2)->schema([
                         TextInput::make('support_email')->label('Support email')->email(),
@@ -131,6 +199,14 @@ class WebsiteSettings extends Page
     public function save(): void
     {
         foreach ($this->form->getState() as $key => $value) {
+            if ($key === 'mail_password') {
+                if (blank($value)) {
+                    continue; // giữ mật khẩu đã lưu
+                }
+
+                $value = MailSettings::encryptPassword($value);
+            }
+
             Setting::set("site.{$key}", $value === '' ? null : $value);
         }
 

@@ -74,6 +74,8 @@
                     <ul class="mt-3 space-y-2 text-sm text-slate-600">
                         <li><a href="{{ route('register') }}" class="hover:text-slate-900">Sign up</a></li>
                         <li><a href="{{ route('login') }}" class="hover:text-slate-900">Log in</a></li>
+                        <li><a href="{{ route('terms') }}" class="hover:text-slate-900">Terms of Service</a></li>
+                        <li><a href="{{ route('privacy') }}" class="hover:text-slate-900">Privacy Policy</a></li>
                         @foreach ($contacts as $label => $href)
                             <li><a href="{{ $href }}" class="hover:text-slate-900" rel="noopener" target="_blank">{{ $label }}</a></li>
                         @endforeach
