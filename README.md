@@ -22,6 +22,15 @@ Seeder tạo cấp bậc, tiền tệ (USD/VND/THB), 3 kênh nạp (SePay, USDT 
 (`ADMIN_EMAIL` / `ADMIN_PASSWORD`; bỏ trống password thì mật khẩu ngẫu nhiên được in ra khi seed).
 Kênh nạp nào chưa khai báo tài khoản/ví trong `.env` sẽ ở trạng thái `disabled`.
 
+Dữ liệu mẫu để test (24 dịch vụ / 7 nền tảng + khách `demo@example.com` / `password`, số dư $100):
+
+```bash
+docker compose exec app php artisan db:seed --class=DemoCatalogSeeder
+```
+
+Dịch vụ mẫu ở chế độ *làm tay*: đơn đặt xong nằm ở "Chờ xử lý", vào `/admin/orders` → *Cập nhật trạng thái*
+để giả lập đơn chạy / hoàn thành / partial (hoàn tiền tự động).
+
 Chạy test (dùng database `smm_testing`):
 
 ```bash
