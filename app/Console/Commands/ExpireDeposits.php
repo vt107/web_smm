@@ -9,7 +9,7 @@ class ExpireDeposits extends Command
 {
     protected $signature = 'deposits:expire';
 
-    protected $description = 'Chuyển phiếu nạp quá hạn sang expired';
+    protected $description = 'Mark overdue deposits as expired';
 
     public function handle(DepositService $deposits): int
     {

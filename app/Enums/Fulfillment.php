@@ -17,7 +17,7 @@ enum Fulfillment: string implements HasColor, HasLabel
     {
         return match ($this) {
             self::Api => 'Qua API provider',
-            self::Manual => 'Làm tay',
+            self::Manual => 'Manual',
         };
     }
 

@@ -9,14 +9,14 @@ class GenerateApiKey extends Command
 {
     protected $signature = 'users:api-key {email}';
 
-    protected $description = 'Tạo lại API key cho user (key cũ mất hiệu lực)';
+    protected $description = 'Regenerate a user\'s API key (the old key stops working)';
 
     public function handle(): int
     {
         $user = User::query()->where('email', $this->argument('email'))->firstOrFail();
 
         $this->info("API key for {$user->email}: {$user->generateApiKey()}");
-        $this->warn('Key chỉ hiển thị 1 lần, hãy lưu lại.');
+        $this->warn('The key is shown only once, please save it.');
 
         return self::SUCCESS;
     }

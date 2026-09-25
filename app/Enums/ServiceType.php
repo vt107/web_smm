@@ -117,31 +117,31 @@ enum ServiceType: string implements HasLabel
         return match ($this) {
             self::Default, self::Package => [],
             self::CustomComments, self::CustomCommentsPackage => [
-                $field('comments', 'Danh sách bình luận', 'textarea', hint: 'Mỗi dòng 1 bình luận'),
+                $field('comments', 'Comments list', 'textarea', hint: 'One comment per line'),
             ],
             self::MentionsCustomList => [
-                $field('usernames', 'Danh sách username', 'textarea', hint: 'Mỗi dòng 1 username'),
+                $field('usernames', 'Usernames list', 'textarea', hint: 'One username per line'),
             ],
             self::MentionsWithHashtags => [
-                $field('usernames', 'Danh sách username', 'textarea', hint: 'Mỗi dòng 1 username'),
-                $field('hashtags', 'Hashtag', 'textarea', hint: 'Mỗi dòng 1 hashtag'),
+                $field('usernames', 'Usernames list', 'textarea', hint: 'One username per line'),
+                $field('hashtags', 'Hashtag', 'textarea', hint: 'One hashtag per line'),
             ],
             self::MentionsUserFollowers, self::CommentLikes => [
                 $field('username', 'Username'),
             ],
             self::CommentReplies => [
                 $field('username', 'Username'),
-                $field('comments', 'Danh sách trả lời', 'textarea', hint: 'Mỗi dòng 1 câu trả lời'),
+                $field('comments', 'Replies list', 'textarea', hint: 'One reply per line'),
             ],
             self::Poll => [
-                $field('answer_number', 'Số thứ tự đáp án', 'number'),
+                $field('answer_number', 'Answer number', 'number'),
             ],
             self::WebTraffic => [
-                $field('country', 'Quốc gia', required: false),
-                $field('device', 'Thiết bị', required: false),
-                $field('type_of_traffic', 'Loại traffic', required: false),
-                $field('google_keyword', 'Từ khoá Google', required: false),
-                $field('referring_url', 'URL giới thiệu', required: false),
+                $field('country', 'Country', required: false),
+                $field('device', 'Device', required: false),
+                $field('type_of_traffic', 'Traffic type', required: false),
+                $field('google_keyword', 'Google keyword', required: false),
+                $field('referring_url', 'Referring URL', required: false),
             ],
         };
     }

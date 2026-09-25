@@ -25,7 +25,7 @@ class ApiLogResource extends Resource
 
     protected static ?string $modelLabel = 'API log';
 
-    protected static ?string $pluralModelLabel = 'API log (khách)';
+    protected static ?string $pluralModelLabel = 'API logs (customers)';
 
     public static function table(Table $table): Table
     {
@@ -33,18 +33,18 @@ class ApiLogResource extends Resource
             ->defaultSort('id', 'desc')
             ->modifyQueryUsing(fn (Builder $query) => $query->with('user'))
             ->columns([
-                TextColumn::make('created_at')->label('Thời gian')->dateTime('d/m/Y H:i:s'),
-                TextColumn::make('user.username')->label('Khách')->placeholder('Key sai')->searchable(),
+                TextColumn::make('created_at')->label('Time')->dateTime('d/m/Y H:i:s'),
+                TextColumn::make('user.username')->label('Customer')->placeholder('Key sai')->searchable(),
                 TextColumn::make('action')->label('Action')->badge()->color('gray'),
                 TextColumn::make('ip')->label('IP')->searchable(),
-                TextColumn::make('error')->label('Lỗi')->color('danger')->placeholder('—')->limit(50),
+                TextColumn::make('error')->label('Error')->color('danger')->placeholder('—')->limit(50),
                 TextColumn::make('request')->label('Request')->limit(80)->toggleable(isToggledHiddenByDefault: true)
                     ->formatStateUsing(fn (ApiLog $r) => json_encode($r->request, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
             ])
             ->filters([
                 SelectFilter::make('action')->label('Action')
                     ->options(array_combine($a = ['services', 'add', 'status', 'refill', 'refill_status', 'cancel', 'balance'], $a)),
-                Filter::make('errors')->label('Chỉ request lỗi')->query(fn (Builder $query) => $query->whereNotNull('error')),
+                Filter::make('errors')->label('Errors only')->query(fn (Builder $query) => $query->whereNotNull('error')),
             ]);
     }
 

@@ -31,7 +31,7 @@ class WebAppTest extends TestCase
     public function test_guest_is_redirected_to_login(): void
     {
         $this->get('/dashboard')->assertRedirect('/login');
-        $this->get('/login')->assertOk()->assertSee('Đăng nhập');
+        $this->get('/login')->assertOk()->assertSee('Log in');
     }
 
     public function test_register_and_login_with_username(): void
@@ -39,7 +39,7 @@ class WebAppTest extends TestCase
         $referrer = User::factory()->create();
 
         $this->post('/register', [
-            'name' => 'Nguyễn Văn A', 'username' => 'nguyenvana', 'email' => 'a@example.com',
+            'name' => 'John Doe', 'username' => 'nguyenvana', 'email' => 'a@example.com',
             'password' => 'secret123', 'password_confirmation' => 'secret123', 'ref' => $referrer->ref_code,
         ])->assertRedirect('/dashboard');
 
@@ -56,7 +56,7 @@ class WebAppTest extends TestCase
     {
         $this->from('/login')->post('/login', ['email' => 'khachhang', 'password' => 'wrong'])
             ->assertRedirect('/login')
-            ->assertSessionHasErrors(['email' => 'Email hoặc mật khẩu không đúng.']);
+            ->assertSessionHasErrors(['email' => 'These credentials do not match our records.']);
     }
 
     public function test_banned_user_is_logged_out(): void
@@ -95,11 +95,11 @@ class WebAppTest extends TestCase
 
         $this->postJson('/ajax/orders', ['service' => $service->id, 'link' => 'https://x.com/a', 'quantity' => 50])
             ->assertStatus(422)
-            ->assertJson(['message' => 'Số lượng tối thiểu là 100']);
+            ->assertJson(['message' => 'Quantity less than minimal 100']);
 
         $this->postJson('/ajax/orders', ['service' => $service->id, 'quantity' => 500])
             ->assertStatus(422)
-            ->assertJson(['message' => 'Vui lòng nhập link.']);
+            ->assertJson(['message' => 'The link field is required.']);
 
         $this->postJson('/ajax/orders', ['service' => $service->id, 'link' => 'https://x.com/a', 'quantity' => 500])
             ->assertCreated()
@@ -118,8 +118,8 @@ class WebAppTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('results.0.error', null)
-            ->assertJsonPath('results.1.error', 'Số lượng tối thiểu là 10')
-            ->assertJsonPath('results.2.error', 'Sai định dạng, cần: service_id | link | số lượng');
+            ->assertJsonPath('results.1.error', 'Quantity less than minimal 10')
+            ->assertJsonPath('results.2.error', 'Invalid format, expected: service_id | link | quantity');
 
         $this->assertSame(1, Order::query()->count());
     }
@@ -151,10 +151,10 @@ class WebAppTest extends TestCase
         $this->getJson("/ajax/deposits/{$deposit['id']}")->assertJsonPath('data.status', 'pending');
 
         $this->postJson('/ajax/deposits', ['payment_method_id' => $method->id, 'amount' => 0.5])
-            ->assertStatus(422)->assertJson(['message' => 'Số tiền nạp phải từ 1.00 đến 5000.00 USD']);
+            ->assertStatus(422)->assertJson(['message' => 'Amount must be between 1.00 and 5000.00 USD']);
 
         $this->postJson('/ajax/deposits/claim', ['payment_method_id' => $method->id, 'txid' => 'nope'])
-            ->assertStatus(422)->assertJson(['message' => 'Chưa thấy giao dịch, vui lòng thử lại sau vài phút']);
+            ->assertStatus(422)->assertJson(['message' => 'Transaction not found yet, please try again in a few minutes']);
     }
 
     public function test_ticket_flow_with_attachment(): void
@@ -162,11 +162,11 @@ class WebAppTest extends TestCase
         Storage::fake('public');
         $this->actingAs($this->user);
 
-        $this->postJson('/ajax/tickets', ['subject' => 'Chậm', 'category' => 'speed_up', 'message' => 'Đơn chạy chậm'])
-            ->assertStatus(422)->assertJson(['message' => 'Vui lòng nhập ít nhất 1 mã đơn hàng']);
+        $this->postJson('/ajax/tickets', ['subject' => 'Slow', 'category' => 'speed_up', 'message' => 'My order is slow'])
+            ->assertStatus(422)->assertJson(['message' => 'At least one order ID is required']);
 
         $ticket = $this->post('/ajax/tickets', [
-            'subject' => 'Hỏi thanh toán', 'category' => 'payment', 'message' => 'Mình đã chuyển tiền',
+            'subject' => 'Payment question', 'category' => 'payment', 'message' => 'I have sent the payment',
             'attachments' => [self::fakePng()],
         ], ['Accept' => 'application/json'])->assertCreated()->json('ticket');
 
@@ -174,7 +174,7 @@ class WebAppTest extends TestCase
             ->assertJsonCount(1, 'data.messages')
             ->assertJsonCount(1, 'data.messages.0.attachments');
 
-        $this->postJson("/ajax/tickets/{$ticket['id']}/reply", ['message' => 'Bổ sung thông tin'])->assertOk();
+        $this->postJson("/ajax/tickets/{$ticket['id']}/reply", ['message' => 'More details'])->assertOk();
         $this->postJson("/ajax/tickets/{$ticket['id']}/close")->assertOk();
 
         $this->actingAs(User::factory()->create())->getJson("/ajax/tickets/{$ticket['id']}")->assertNotFound();
@@ -193,7 +193,7 @@ class WebAppTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $this->putJson('/ajax/account', ['name' => 'Tên mới', 'currency' => 'THB', 'timezone' => 'Asia/Bangkok'])->assertOk();
+        $this->putJson('/ajax/account', ['name' => 'New name', 'currency' => 'THB', 'timezone' => 'Asia/Bangkok'])->assertOk();
         $this->getJson('/ajax/me')->assertJsonPath('balance', '฿3,250.00');
 
         $this->putJson('/ajax/account/password', ['current_password' => 'wrong', 'password' => 'newpass123', 'password_confirmation' => 'newpass123'])

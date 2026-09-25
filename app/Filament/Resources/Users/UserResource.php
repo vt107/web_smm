@@ -40,9 +40,9 @@ class UserResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = NavGroup::CUSTOMERS;
 
-    protected static ?string $modelLabel = 'khách hàng';
+    protected static ?string $modelLabel = 'customer';
 
-    protected static ?string $pluralModelLabel = 'Khách hàng';
+    protected static ?string $pluralModelLabel = 'Customers';
 
     protected static ?int $navigationSort = 1;
 
@@ -51,20 +51,20 @@ class UserResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->columns(2)->components([
-            Section::make('Tài khoản')->columns(2)->schema([
-                TextInput::make('name')->label('Họ tên')->required()->maxLength(100),
+            Section::make('Account')->columns(2)->schema([
+                TextInput::make('name')->label('Full name')->required()->maxLength(100),
                 TextInput::make('username')->label('Username')->required()->maxLength(50)->alphaDash()->unique(ignoreRecord: true),
                 TextInput::make('email')->label('Email')->email()->required()->maxLength(191)->unique(ignoreRecord: true),
-                TextInput::make('password')->label('Mật khẩu')->password()->revealable()->minLength(8)
+                TextInput::make('password')->label('Password')->password()->revealable()->minLength(8)
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $operation) => $operation === 'create')
-                    ->helperText(fn (string $operation) => $operation === 'edit' ? 'Bỏ trống nếu không đổi.' : null),
+                    ->helperText(fn (string $operation) => $operation === 'edit' ? 'Leave empty to keep the current password.' : null),
             ]),
-            Section::make('Phân quyền & cấp bậc')->columns(2)->schema([
-                Select::make('level_id')->label('Cấp bậc')->relationship('level', 'name')->required(),
-                Select::make('status')->label('Trạng thái')->options(UserStatus::class)->required()->default(UserStatus::Active),
-                Select::make('role')->label('Vai trò')->options(UserRole::class)->required()->default(UserRole::User),
-                Select::make('currency')->label('Tiền tệ hiển thị')->options(fn () => Currency::query()->pluck('name', 'code'))
+            Section::make('Role & level')->columns(2)->schema([
+                Select::make('level_id')->label('Levels')->relationship('level', 'name')->required(),
+                Select::make('status')->label('Status')->options(UserStatus::class)->required()->default(UserStatus::Active),
+                Select::make('role')->label('Role')->options(UserRole::class)->required()->default(UserRole::User),
+                Select::make('currency')->label('Display currencies')->options(fn () => Currency::query()->pluck('name', 'code'))
                     ->required()->default(Currency::BASE),
             ]),
         ]);
@@ -76,19 +76,19 @@ class UserResource extends Resource
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable(),
-                TextColumn::make('username')->label('Khách hàng')->searchable(['username', 'email', 'name'])
+                TextColumn::make('username')->label('Customers')->searchable(['username', 'email', 'name'])
                     ->description(fn (User $r) => $r->email),
-                TextColumn::make('level.name')->label('Cấp')->badge()->color('gray'),
-                TextColumn::make('balance')->label('Số dư')->formatStateUsing(fn ($state) => Fmt::usd($state))->sortable(),
-                TextColumn::make('total_spent')->label('Đã chi')->formatStateUsing(fn ($state) => Fmt::usd($state))->sortable(),
-                TextColumn::make('role')->label('Vai trò')->badge()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('created_at')->label('Đăng ký')->since()->sortable(),
+                TextColumn::make('level.name')->label('Level')->badge()->color('gray'),
+                TextColumn::make('balance')->label('Balance')->formatStateUsing(fn ($state) => Fmt::usd($state))->sortable(),
+                TextColumn::make('total_spent')->label('Spent')->formatStateUsing(fn ($state) => Fmt::usd($state))->sortable(),
+                TextColumn::make('role')->label('Role')->badge()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('created_at')->label('Registered')->since()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('level_id')->label('Cấp bậc')->relationship('level', 'name'),
-                SelectFilter::make('status')->label('Trạng thái')->options(UserStatus::class),
-                SelectFilter::make('role')->label('Vai trò')->options(UserRole::class),
+                SelectFilter::make('level_id')->label('Levels')->relationship('level', 'name'),
+                SelectFilter::make('status')->label('Status')->options(UserStatus::class),
+                SelectFilter::make('role')->label('Role')->options(UserRole::class),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -99,16 +99,16 @@ class UserResource extends Resource
     public static function adjustBalanceAction(): Action
     {
         return Action::make('adjustBalance')
-            ->label('Cộng/trừ tiền')
+            ->label('Adjust balance')
             ->icon(Heroicon::OutlinedBanknotes)
             ->schema([
-                Select::make('type')->label('Loại')->required()->default(TransactionType::AdminAdd->value)
+                Select::make('type')->label('Type')->required()->default(TransactionType::AdminAdd->value)
                     ->options([
-                        TransactionType::AdminAdd->value => 'Cộng tiền',
-                        TransactionType::AdminDeduct->value => 'Trừ tiền',
+                        TransactionType::AdminAdd->value => 'Add funds',
+                        TransactionType::AdminDeduct->value => 'Deduct funds',
                     ]),
-                TextInput::make('amount')->label('Số tiền (USD)')->numeric()->minValue(0.000001)->required()->prefix('$'),
-                TextInput::make('description')->label('Ghi chú (khách nhìn thấy)')->maxLength(255),
+                TextInput::make('amount')->label('Amount (USD)')->numeric()->minValue(0.000001)->required()->prefix('$'),
+                TextInput::make('description')->label('Note (visible to customer)')->maxLength(255),
             ])
             ->action(function (User $record, array $data) {
                 $type = TransactionType::from($data['type']);
@@ -123,12 +123,12 @@ class UserResource extends Resource
                         createdBy: auth()->user(),
                     );
                 } catch (InsufficientBalanceException) {
-                    Notification::make()->danger()->title('Số dư không đủ để trừ')->send();
+                    Notification::make()->danger()->title('Insufficient balance to deduct')->send();
 
                     return;
                 }
 
-                Notification::make()->success()->title('Đã cập nhật số dư: '.Fmt::usd($record->fresh()->balance))->send();
+                Notification::make()->success()->title('Balance updated: '.Fmt::usd($record->fresh()->balance))->send();
             });
     }
 

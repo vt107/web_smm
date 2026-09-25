@@ -15,14 +15,14 @@ class PaymentMethodSeeder extends Seeder
         $sepay = config('services.sepay');
         $crypto = config('services.crypto');
 
-        $this->upsert('Chuyển khoản ngân hàng (VietQR)', [
+        $this->upsert('Bank Transfer (VietQR)', [
             'gateway' => PaymentGateway::Sepay,
             'currency' => 'VND',
             'exchange_rate' => 26000,
             'min_amount' => 1,
             'max_amount' => 5000,
             'bonus_percent' => 0,
-            'instructions' => 'Chuyển khoản đúng số tiền và ghi đúng nội dung là mã phiếu nạp.',
+            'instructions' => 'Transfer the exact amount and use the deposit code as the transfer description.',
             'config' => [
                 'bank_name' => $sepay['bank_name'],
                 'account_number' => $sepay['account_number'],
@@ -39,7 +39,7 @@ class PaymentMethodSeeder extends Seeder
             'min_amount' => 5,
             'max_amount' => 10000,
             'bonus_percent' => 5,
-            'instructions' => 'Chỉ gửi USDT trên mạng TRON (TRC20). Gửi đúng số tiền hiển thị, kể cả phần lẻ.',
+            'instructions' => 'Send USDT on TRON (TRC20) only. Send the exact amount shown, including decimals.',
             'config' => [
                 'network' => 'tron',
                 'address' => $crypto['usdt_trc20_address'],
@@ -57,7 +57,7 @@ class PaymentMethodSeeder extends Seeder
             'min_amount' => 5,
             'max_amount' => 10000,
             'bonus_percent' => 5,
-            'instructions' => 'Chỉ gửi USDT trên mạng BNB Smart Chain (BEP20). Gửi đúng số tiền hiển thị, kể cả phần lẻ.',
+            'instructions' => 'Send USDT on BNB Smart Chain (BEP20) only. Send the exact amount shown, including decimals.',
             'config' => [
                 'network' => 'bsc',
                 'chain_id' => 56,

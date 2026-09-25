@@ -1,8 +1,8 @@
-<x-layouts.app title="Lịch sử giao dịch">
+<x-layouts.app title="Transactions">
     <div x-data="transactionsPage()" x-init="load()" class="card">
         <div class="overflow-x-auto">
             <table class="tbl">
-                <thead><tr><th>Thời gian</th><th>Loại</th><th>Nội dung</th><th class="text-right">Số tiền</th><th class="text-right">Số dư sau</th></tr></thead>
+                <thead><tr><th>Time</th><th>Type</th><th>Description</th><th class="text-right">Amount</th><th class="text-right">Balance after</th></tr></thead>
                 <tbody>
                     <template x-for="t in items" :key="t.id">
                         <tr>
@@ -13,7 +13,7 @@
                             <td class="text-right whitespace-nowrap" x-text="t.balance_after"></td>
                         </tr>
                     </template>
-                    <tr x-show="loaded && items.length === 0"><td colspan="5" class="py-10 text-center text-slate-500">Chưa có giao dịch.</td></tr>
+                    <tr x-show="loaded && items.length === 0"><td colspan="5" class="py-10 text-center text-slate-500">No transactions yet.</td></tr>
                 </tbody>
             </table>
         </div>

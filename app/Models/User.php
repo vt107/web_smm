@@ -27,7 +27,7 @@ class User extends Authenticatable implements FilamentUser
         'total_spent' => '0',
         'currency' => 'USD',
         'timezone' => 'Asia/Ho_Chi_Minh',
-        'locale' => 'vi',
+        'locale' => 'en',
     ];
 
     /**

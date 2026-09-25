@@ -41,8 +41,8 @@ class ProviderResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->columns(2)->components([
-            TextInput::make('name')->label('Tên')->required()->maxLength(100),
-            Select::make('driver')->label('Chuẩn API')->options(['perfectpanel' => 'PerfectPanel API v2'])
+            TextInput::make('name')->label('Name')->required()->maxLength(100),
+            Select::make('driver')->label('API standard')->options(['perfectpanel' => 'PerfectPanel API v2'])
                 ->required()->default('perfectpanel'),
             TextInput::make('api_url')->label('API URL')->url()->required()->placeholder('https://provider.com/api/v2'),
             TextInput::make('api_key')->label('API key')->password()->revealable()
@@ -50,9 +50,9 @@ class ProviderResource extends Resource
                 ->formatStateUsing(fn () => null)
                 ->dehydrated(fn ($state) => filled($state))
                 ->required(fn (string $operation) => $operation === 'create')
-                ->helperText(fn (string $operation) => $operation === 'edit' ? 'Bỏ trống để giữ key hiện tại.' : null),
-            Select::make('status')->label('Trạng thái')->options(ActiveStatus::class)->required()->default(ActiveStatus::Active),
-            Textarea::make('note')->label('Ghi chú')->columnSpanFull(),
+                ->helperText(fn (string $operation) => $operation === 'edit' ? 'Leave empty to keep the current key.' : null),
+            Select::make('status')->label('Status')->options(ActiveStatus::class)->required()->default(ActiveStatus::Active),
+            Textarea::make('note')->label('Note')->columnSpanFull(),
         ]);
     }
 
@@ -60,34 +60,34 @@ class ProviderResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->label('Tên')->weight('bold')->description(fn (Provider $r) => $r->api_url),
-                TextColumn::make('balance')->label('Số dư')->formatStateUsing(fn ($state) => Fmt::usd($state)),
-                TextColumn::make('services_count')->label('Dịch vụ')->counts('services'),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('last_synced_at')->label('Đồng bộ lần cuối')->since()->placeholder('Chưa'),
+                TextColumn::make('name')->label('Name')->weight('bold')->description(fn (Provider $r) => $r->api_url),
+                TextColumn::make('balance')->label('Balance')->formatStateUsing(fn ($state) => Fmt::usd($state)),
+                TextColumn::make('services_count')->label('Services')->counts('services'),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('last_synced_at')->label('Last synced')->since()->placeholder('Never'),
             ])
             ->recordActions([
                 EditAction::make(),
                 ActionGroup::make([
                     Action::make('sync')
-                        ->label('Đồng bộ giá & số dư')
+                        ->label('Sync prices & balance')
                         ->icon(Heroicon::OutlinedArrowPath)
                         ->action(function (Provider $record) {
                             try {
                                 $stats = app(ServiceSyncService::class)->sync($record);
-                                Notification::make()->success()->title('Đã đồng bộ')
-                                    ->body("Cập nhật {$stats['updated']} dịch vụ, tắt {$stats['disabled']} dịch vụ.")->send();
+                                Notification::make()->success()->title('Synced')
+                                    ->body("Updated {$stats['updated']} services, disabled {$stats['disabled']} services.")->send();
                             } catch (ProviderException $e) {
-                                Notification::make()->danger()->title('Provider báo lỗi')->body($e->getMessage())->send();
+                                Notification::make()->danger()->title('Provider error')->body($e->getMessage())->send();
                             }
                         }),
                     Action::make('import')
-                        ->label('Import dịch vụ mới')
+                        ->label('Import new services')
                         ->icon(Heroicon::OutlinedArrowDownTray)
                         ->schema([
-                            TextInput::make('markup')->label('% lãi cộng vào giá vốn')->numeric()->minValue(0)->default(30)->required(),
-                            Textarea::make('only')->label('Chỉ import các service ID (của provider)')
-                                ->placeholder('Bỏ trống = import tất cả. Phân tách bằng dấu phẩy.'),
+                            TextInput::make('markup')->label('Markup % over cost')->numeric()->minValue(0)->default(30)->required(),
+                            Textarea::make('only')->label('Only import these provider service IDs')
+                                ->placeholder('Leave empty to import all. Comma separated.'),
                         ])
                         ->action(function (Provider $record, array $data) {
                             $only = filled($data['only'] ?? null)
@@ -96,9 +96,9 @@ class ProviderResource extends Resource
 
                             try {
                                 $created = app(ServiceSyncService::class)->import($record, (string) $data['markup'], $only);
-                                Notification::make()->success()->title("Đã import {$created} dịch vụ")->send();
+                                Notification::make()->success()->title("Imported {$created} services")->send();
                             } catch (ProviderException $e) {
-                                Notification::make()->danger()->title('Provider báo lỗi')->body($e->getMessage())->send();
+                                Notification::make()->danger()->title('Provider error')->body($e->getMessage())->send();
                             }
                         }),
                 ]),

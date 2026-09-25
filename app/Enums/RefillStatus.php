@@ -38,11 +38,11 @@ enum RefillStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Pending => 'Chờ gửi',
-            self::Processing => 'Đang xử lý',
-            self::Completed => 'Hoàn thành',
-            self::Rejected => 'Bị từ chối',
-            self::Error => 'Lỗi',
+            self::Pending => 'Pending',
+            self::Processing => 'Processing',
+            self::Completed => 'Completed',
+            self::Rejected => 'Rejected',
+            self::Error => 'Error',
         };
     }
 

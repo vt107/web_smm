@@ -24,7 +24,7 @@ class Settings extends Page
 
     protected static string|UnitEnum|null $navigationGroup = NavGroup::SYSTEM;
 
-    protected static ?string $title = 'Cài đặt';
+    protected static ?string $title = 'Settings';
 
     protected static ?int $navigationSort = 99;
 
@@ -41,16 +41,16 @@ class Settings extends Page
     public function form(Schema $schema): Schema
     {
         return $schema->statePath('data')->components([
-            Section::make('Đơn hàng')->columns(2)->schema([
-                TextInput::make('order_max_send_attempts')->label('Số lần gửi provider tối đa')->integer()->minValue(1)->maxValue(20)->required()
-                    ->helperText('Hết số lần này mà provider vẫn lỗi → huỷ đơn và tự hoàn tiền.'),
-                TextInput::make('price_sync_markup_percent')->label('% lãi tự áp khi đồng bộ giá')->numeric()->minValue(0)
-                    ->helperText('Bỏ trống = không tự đổi giá bán khi giá vốn thay đổi.'),
-                TextInput::make('low_provider_balance_alert')->label('Cảnh báo khi số dư provider dưới (USD)')->numeric()->minValue(0)->required(),
+            Section::make('Orders')->columns(2)->schema([
+                TextInput::make('order_max_send_attempts')->label('Max. provider send attempts')->integer()->minValue(1)->maxValue(20)->required()
+                    ->helperText('After this many failed attempts the order is canceled and refunded automatically.'),
+                TextInput::make('price_sync_markup_percent')->label('Auto markup % on price sync')->numeric()->minValue(0)
+                    ->helperText('Leave empty to keep selling prices unchanged when costs change.'),
+                TextInput::make('low_provider_balance_alert')->label('Low provider balance alert (USD)')->numeric()->minValue(0)->required(),
             ]),
-            Section::make('Nạp tiền')->columns(2)->schema([
-                TextInput::make('deposit_claim_window_hours')->label('Cho khách nhận giao dịch trong (giờ)')->integer()->minValue(1)->required()
-                    ->helperText('Phiếu đã hết hạn vẫn khớp được giao dịch đến trễ trong khoảng thời gian này.'),
+            Section::make('Deposit')->columns(2)->schema([
+                TextInput::make('deposit_claim_window_hours')->label('Claim window for late transactions (hours)')->integer()->minValue(1)->required()
+                    ->helperText('Expired deposits can still be matched with late transactions within this window.'),
             ]),
         ]);
     }
@@ -62,7 +62,7 @@ class Settings extends Page
                 ->id('form')
                 ->livewireSubmitHandler('save')
                 ->footer([
-                    Actions::make([Action::make('save')->label('Lưu cài đặt')->submit('save')]),
+                    Actions::make([Action::make('save')->label('Save settings')->submit('save')]),
                 ]),
         ]);
     }
@@ -73,6 +73,6 @@ class Settings extends Page
             Setting::set($key, $value === '' ? null : $value);
         }
 
-        Notification::make()->success()->title('Đã lưu cài đặt')->send();
+        Notification::make()->success()->title('Settings saved')->send();
     }
 }

@@ -41,24 +41,24 @@ class OrderRefillResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['order.service', 'user']))
             ->columns([
                 TextColumn::make('id')->label('ID'),
-                TextColumn::make('order_id')->label('Đơn')->prefix('#')
+                TextColumn::make('order_id')->label('Order')->prefix('#')
                     ->url(fn (OrderRefill $r) => OrderResource::getUrl('view', ['record' => $r->order_id]))
                     ->description(fn (OrderRefill $r) => str($r->order->service->name)->limit(40)),
-                TextColumn::make('user.username')->label('Khách')->searchable(),
+                TextColumn::make('user.username')->label('Customer')->searchable(),
                 TextColumn::make('provider_refill_id')->label('Refill ID provider')->placeholder('—'),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('provider_response')->label('Phản hồi')->limit(50)->placeholder('—'),
-                TextColumn::make('created_at')->label('Yêu cầu lúc')->dateTime('d/m/Y H:i'),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('provider_response')->label('Response')->limit(50)->placeholder('—'),
+                TextColumn::make('created_at')->label('Requested at')->dateTime('d/m/Y H:i'),
             ])
             ->filters([
-                SelectFilter::make('status')->label('Trạng thái')->options(RefillStatus::class),
+                SelectFilter::make('status')->label('Status')->options(RefillStatus::class),
             ])
             ->recordActions([
                 Action::make('setStatus')
-                    ->label('Đổi trạng thái')
+                    ->label('Change status')
                     ->icon(Heroicon::OutlinedPencilSquare)
                     ->fillForm(fn (OrderRefill $r) => ['status' => $r->status])
-                    ->schema([Select::make('status')->label('Trạng thái')->options(RefillStatus::class)->required()])
+                    ->schema([Select::make('status')->label('Status')->options(RefillStatus::class)->required()])
                     ->action(fn (OrderRefill $r, array $data) => $r->update(['status' => $data['status']])),
             ]);
     }

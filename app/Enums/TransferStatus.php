@@ -14,9 +14,9 @@ enum TransferStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Unmatched => 'Chưa khớp',
-            self::Matched => 'Đã khớp',
-            self::Ignored => 'Bỏ qua',
+            self::Unmatched => 'Unmatched',
+            self::Matched => 'Matched',
+            self::Ignored => 'Ignored',
         };
     }
 

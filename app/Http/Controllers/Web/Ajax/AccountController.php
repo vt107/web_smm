@@ -60,7 +60,7 @@ class AccountController extends Controller
 
         $request->user()->update($data);
 
-        return response()->json(['message' => 'Đã lưu thông tin tài khoản']);
+        return response()->json(['message' => 'Account updated']);
     }
 
     public function password(Request $request): JsonResponse
@@ -72,14 +72,14 @@ class AccountController extends Controller
 
         $request->user()->update(['password' => $data['password']]);
 
-        return response()->json(['message' => 'Đã đổi mật khẩu']);
+        return response()->json(['message' => 'Password changed']);
     }
 
     public function apiKey(Request $request): JsonResponse
     {
         return response()->json([
             'key' => $request->user()->generateApiKey(),
-            'message' => 'Đã tạo API key mới. Key chỉ hiển thị 1 lần, hãy lưu lại.',
+            'message' => 'New API key created. It is shown only once, please save it.',
         ]);
     }
 

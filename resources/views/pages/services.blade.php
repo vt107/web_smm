@@ -1,19 +1,19 @@
-<x-layouts.app title="Bảng giá dịch vụ">
+<x-layouts.app title="Services">
     <div x-data="servicesPage()" x-init="init()" class="space-y-4">
         <div class="card flex flex-wrap items-center gap-3">
-            <input class="input max-w-sm" placeholder="Tìm dịch vụ…" x-model.debounce.200ms="search">
+            <input class="input max-w-sm" placeholder="Search services…" x-model.debounce.200ms="search">
             <select class="input max-w-48" x-model="platform">
-                <option value="">Tất cả nền tảng</option>
+                <option value="">All platforms</option>
                 <template x-for="p in platforms" :key="p.value"><option :value="p.value" x-text="p.label"></option></template>
             </select>
-            <p class="ml-auto text-sm text-slate-500">Giá đã áp dụng giảm giá theo cấp bậc của bạn.</p>
+            <p class="ml-auto text-sm text-slate-500">Prices include your level discount.</p>
         </div>
 
         <template x-for="c in filtered" :key="c.id">
             <div class="card overflow-x-auto p-0">
                 <h2 class="border-b border-slate-200 px-5 py-3 font-semibold" x-text="c.name"></h2>
                 <table class="tbl">
-                    <thead><tr><th class="w-16">ID</th><th>Dịch vụ</th><th>Giá / 1000</th><th>Min – Max</th><th>Refill</th><th>Huỷ</th><th></th></tr></thead>
+                    <thead><tr><th class="w-16">ID</th><th>Service</th><th>Rate / 1000</th><th>Min – Max</th><th>Refill</th><th>Cancel</th><th></th></tr></thead>
                     <tbody>
                         <template x-for="s in c.services" :key="s.id">
                             <tr>
@@ -21,22 +21,22 @@
                                 <td>
                                     <span x-text="s.name"></span>
                                     <details x-show="s.description" class="mt-1 text-xs text-slate-500">
-                                        <summary class="cursor-pointer">Mô tả</summary>
+                                        <summary class="cursor-pointer">Description</summary>
                                         <p class="mt-1 whitespace-pre-line" x-text="s.description"></p>
                                     </details>
                                 </td>
-                                <td class="font-medium whitespace-nowrap" x-text="s.rate + (s.is_package ? ' / gói' : '')"></td>
+                                <td class="font-medium whitespace-nowrap" x-text="s.rate + (s.is_package ? ' / package' : '')"></td>
                                 <td class="whitespace-nowrap" x-text="s.min.toLocaleString() + ' – ' + s.max.toLocaleString()"></td>
-                                <td x-text="s.refill ? (s.refill_days ? s.refill_days + ' ngày' : '✓') : '—'"></td>
+                                <td x-text="s.refill ? (s.refill_days ? s.refill_days + ' days' : '✓') : '—'"></td>
                                 <td x-text="s.cancel ? '✓' : '—'"></td>
-                                <td class="text-right"><a class="btn-primary btn-sm" :href="'{{ route('new-order') }}?service=' + s.id">Đặt</a></td>
+                                <td class="text-right"><a class="btn-primary btn-sm" :href="'{{ route('new-order') }}?service=' + s.id">Order</a></td>
                             </tr>
                         </template>
                     </tbody>
                 </table>
             </div>
         </template>
-        <p x-show="loaded && filtered.length === 0" class="card text-center text-slate-500">Không tìm thấy dịch vụ.</p>
+        <p x-show="loaded && filtered.length === 0" class="card text-center text-slate-500">No services found.</p>
     </div>
 
     @push('scripts')

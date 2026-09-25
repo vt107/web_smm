@@ -42,9 +42,9 @@ class OrderResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = NavGroup::ORDERS;
 
-    protected static ?string $modelLabel = 'đơn hàng';
+    protected static ?string $modelLabel = 'order';
 
-    protected static ?string $pluralModelLabel = 'Đơn hàng';
+    protected static ?string $pluralModelLabel = 'Orders';
 
     protected static ?int $navigationSort = 1;
 
@@ -54,35 +54,35 @@ class OrderResource extends Resource
             ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable()->searchable(isIndividual: true, isGlobal: false),
-                TextColumn::make('user.username')->label('Khách')->searchable(),
-                TextColumn::make('service.name')->label('Dịch vụ')->limit(40)->wrap()
+                TextColumn::make('user.username')->label('Customer')->searchable(),
+                TextColumn::make('service.name')->label('Services')->limit(40)->wrap()
                     ->description(fn (Order $r) => "#{$r->service_id}"),
                 TextColumn::make('link')->label('Link')->limit(30)->searchable()
                     ->url(fn (Order $r) => str_starts_with($r->link, 'http') ? $r->link : null, shouldOpenInNewTab: true),
-                TextColumn::make('quantity')->label('Số lượng')->numeric()
-                    ->description(fn (Order $r) => $r->remains !== null && $r->status !== OrderStatus::Completed ? "Còn {$r->remains}" : null),
-                TextColumn::make('charge')->label('Tiền')->formatStateUsing(fn ($state) => Fmt::usd($state))
-                    ->description(fn (Order $r) => Money::isPositive($r->refunded_amount) ? 'Hoàn '.Fmt::usd($r->refunded_amount) : null),
-                TextColumn::make('status')->label('Trạng thái')->badge()
-                    ->description(fn (Order $r) => $r->provider_error ? 'Lỗi provider' : ($r->cancel_requested_at ? 'Đang yêu cầu huỷ' : null)),
-                TextColumn::make('provider.name')->label('Provider')->placeholder('Làm tay')
+                TextColumn::make('quantity')->label('Quantity')->numeric()
+                    ->description(fn (Order $r) => $r->remains !== null && $r->status !== OrderStatus::Completed ? "{$r->remains} remaining" : null),
+                TextColumn::make('charge')->label('Charge')->formatStateUsing(fn ($state) => Fmt::usd($state))
+                    ->description(fn (Order $r) => Money::isPositive($r->refunded_amount) ? 'Refunded '.Fmt::usd($r->refunded_amount) : null),
+                TextColumn::make('status')->label('Status')->badge()
+                    ->description(fn (Order $r) => $r->provider_error ? 'Provider error' : ($r->cancel_requested_at ? 'Cancel requested' : null)),
+                TextColumn::make('provider.name')->label('Provider')->placeholder('Manual')
                     ->description(fn (Order $r) => $r->provider_order_id ? "#{$r->provider_order_id}" : null)
                     ->toggleable(),
-                TextColumn::make('source')->label('Nguồn')->badge()->color('gray')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('created_at')->label('Ngày đặt')->dateTime('d/m/Y H:i')->sortable(),
+                TextColumn::make('source')->label('Source')->badge()->color('gray')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('created_at')->label('Created')->dateTime('d/m/Y H:i')->sortable(),
             ])
             ->filters([
-                SelectFilter::make('status')->label('Trạng thái')->options(OrderStatus::class)->multiple(),
+                SelectFilter::make('status')->label('Status')->options(OrderStatus::class)->multiple(),
                 SelectFilter::make('provider_id')->label('Provider')->relationship('provider', 'name'),
-                SelectFilter::make('source')->label('Nguồn đặt')->options(OrderSource::class),
-                Filter::make('needs_attention')->label('Cần xử lý (lỗi / chờ huỷ / làm tay)')
+                SelectFilter::make('source')->label('Source')->options(OrderSource::class),
+                Filter::make('needs_attention')->label('Needs attention (errors / cancel requests / manual)')
                     ->query(fn (Builder $query) => $query->whereIn('status', OrderStatus::active())->where(fn ($q) => $q
                         ->whereNotNull('provider_error')
                         ->orWhereNotNull('cancel_requested_at')
                         ->orWhereNull('provider_id'))),
                 Filter::make('created_at')->schema([
-                    DatePicker::make('from')->label('Từ ngày'),
-                    DatePicker::make('until')->label('Đến ngày'),
+                    DatePicker::make('from')->label('From'),
+                    DatePicker::make('until')->label('Until'),
                 ])->query(fn (Builder $query, array $data) => $query
                     ->when($data['from'] ?? null, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
                     ->when($data['until'] ?? null, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))),
@@ -98,7 +98,7 @@ class OrderResource extends Resource
     {
         return [
             Action::make('updateStatus')
-                ->label('Cập nhật trạng thái')
+                ->label('Update status')
                 ->icon(Heroicon::OutlinedPencilSquare)
                 ->visible(fn (Order $record) => ! $record->status->isFinal())
                 ->fillForm(fn (Order $record) => [
@@ -107,10 +107,10 @@ class OrderResource extends Resource
                     'remains' => $record->remains,
                 ])
                 ->schema([
-                    Select::make('status')->label('Trạng thái')->options(OrderStatus::class)->required()
-                        ->helperText('Partial → hoàn tiền phần còn thiếu; Canceled → hoàn toàn bộ.'),
+                    Select::make('status')->label('Status')->options(OrderStatus::class)->required()
+                        ->helperText('Partial → refunds the remains; Canceled → full refund.'),
                     TextInput::make('start_count')->label('Start count')->integer()->minValue(0),
-                    TextInput::make('remains')->label('Còn thiếu (remains)')->integer()->minValue(0),
+                    TextInput::make('remains')->label('Remains')->integer()->minValue(0),
                 ])
                 ->action(function (Order $record, array $data) {
                     app(OrderService::class)->applyStatus(
@@ -119,48 +119,48 @@ class OrderResource extends Resource
                         filled($data['start_count']) ? (int) $data['start_count'] : null,
                         filled($data['remains']) ? (int) $data['remains'] : null,
                     );
-                    Notification::make()->success()->title('Đã cập nhật đơn #'.$record->id)->send();
+                    Notification::make()->success()->title('Updated order #'.$record->id)->send();
                 }),
             Action::make('resend')
-                ->label('Gửi lại sang provider')
+                ->label('Resend to provider')
                 ->icon(Heroicon::OutlinedPaperAirplane)
                 ->visible(fn (Order $record) => $record->status === OrderStatus::Pending && ! $record->isSentToProvider() && $record->provider_id)
                 ->requiresConfirmation()
                 ->action(function (Order $record) {
                     try {
                         app(OrderService::class)->resend($record);
-                        Notification::make()->success()->title('Đã đưa đơn vào hàng đợi gửi lại')->send();
+                        Notification::make()->success()->title('Order queued for resending')->send();
                     } catch (SmmException $e) {
                         Notification::make()->danger()->title($e->localized())->send();
                     }
                 }),
             Action::make('cancelRefund')
-                ->label('Huỷ & hoàn tiền')
+                ->label('Cancel & refund')
                 ->icon(Heroicon::OutlinedXCircle)
                 ->color('danger')
                 ->visible(fn (Order $record) => ! $record->status->isFinal())
                 ->requiresConfirmation()
-                ->modalDescription('Đơn chuyển sang Canceled và hoàn phần tiền chưa hoàn. Nếu đơn đã gửi provider, hãy chắc chắn provider đã huỷ.')
+                ->modalDescription('The order becomes Canceled and the unrefunded amount is returned. If it was sent to a provider, make sure the provider has canceled it.')
                 ->action(function (Order $record) {
                     app(OrderService::class)->applyStatus($record, OrderStatus::Canceled);
-                    Notification::make()->success()->title('Đã huỷ và hoàn tiền đơn #'.$record->id)->send();
+                    Notification::make()->success()->title('Canceled and refunded order #'.$record->id)->send();
                 }),
             Action::make('refund')
-                ->label('Hoàn toàn bộ tiền')
+                ->label('Full refund')
                 ->icon(Heroicon::OutlinedReceiptRefund)
                 ->color('danger')
                 ->visible(fn (Order $record) => $record->status->isFinal() && $record->status !== OrderStatus::Refunded)
                 ->requiresConfirmation()
-                ->modalDescription('Hoàn phần tiền chưa hoàn của đơn đã kết thúc và chuyển trạng thái sang Refunded.')
+                ->modalDescription('Refund the remaining amount of this finished order and mark it as Refunded.')
                 ->action(function (Order $record) {
                     app(OrderService::class)->refundByAdmin($record);
-                    Notification::make()->success()->title('Đã hoàn tiền đơn #'.$record->id)->send();
+                    Notification::make()->success()->title('Refunded order #'.$record->id)->send();
                 }),
             Action::make('note')
-                ->label('Ghi chú nội bộ')
+                ->label('Internal note')
                 ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
                 ->fillForm(fn (Order $record) => ['admin_note' => $record->admin_note])
-                ->schema([Textarea::make('admin_note')->label('Ghi chú')->rows(4)])
+                ->schema([Textarea::make('admin_note')->label('Note')->rows(4)])
                 ->action(fn (Order $record, array $data) => $record->update(['admin_note' => $data['admin_note']])),
         ];
     }
@@ -168,38 +168,38 @@ class OrderResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->columns(3)->components([
-            Section::make('Đơn hàng')->columnSpan(2)->columns(2)->schema([
-                TextEntry::make('service.name')->label('Dịch vụ')->columnSpanFull(),
+            Section::make('Orders')->columnSpan(2)->columns(2)->schema([
+                TextEntry::make('service.name')->label('Services')->columnSpanFull(),
                 TextEntry::make('link')->label('Link')->copyable()->columnSpanFull(),
-                TextEntry::make('status')->label('Trạng thái')->badge(),
-                TextEntry::make('source')->label('Nguồn đặt')->badge()->color('gray'),
-                TextEntry::make('quantity')->label('Số lượng')->numeric(),
-                TextEntry::make('runs')->label('Drip-feed')->placeholder('Không')
-                    ->formatStateUsing(fn (Order $record) => "{$record->runs} lần, cách {$record->interval} phút"),
+                TextEntry::make('status')->label('Status')->badge(),
+                TextEntry::make('source')->label('Source')->badge()->color('gray'),
+                TextEntry::make('quantity')->label('Quantity')->numeric(),
+                TextEntry::make('runs')->label('Drip-feed')->placeholder('No')
+                    ->formatStateUsing(fn (Order $record) => "{$record->runs} runs, every {$record->interval} min"),
                 TextEntry::make('start_count')->label('Start count')->placeholder('—'),
-                TextEntry::make('remains')->label('Còn thiếu')->placeholder('—'),
-                KeyValueEntry::make('extra')->label('Tham số thêm')->columnSpanFull()->visible(fn (Order $r) => ! empty($r->extra)),
+                TextEntry::make('remains')->label('Remains')->placeholder('—'),
+                KeyValueEntry::make('extra')->label('Extra parameters')->columnSpanFull()->visible(fn (Order $r) => ! empty($r->extra)),
             ]),
-            Section::make('Tiền')->columnSpan(1)->schema([
-                TextEntry::make('user.username')->label('Khách')->helperText(fn (Order $r) => $r->user->email),
-                TextEntry::make('rate')->label('Giá / 1000')->formatStateUsing(fn ($state) => Fmt::usd($state)),
-                TextEntry::make('discount_percent')->label('Giảm theo cấp')->suffix('%'),
-                TextEntry::make('charge')->label('Đã trừ')->formatStateUsing(fn ($state) => Fmt::usd($state)),
-                TextEntry::make('refunded_amount')->label('Đã hoàn')->formatStateUsing(fn ($state) => Fmt::usd($state)),
-                TextEntry::make('cost')->label('Giá vốn')->formatStateUsing(fn ($state) => Fmt::usd($state)),
+            Section::make('Charge')->columnSpan(1)->schema([
+                TextEntry::make('user.username')->label('Customer')->helperText(fn (Order $r) => $r->user->email),
+                TextEntry::make('rate')->label('Rate / 1000')->formatStateUsing(fn ($state) => Fmt::usd($state)),
+                TextEntry::make('discount_percent')->label('Level discount')->suffix('%'),
+                TextEntry::make('charge')->label('Charged')->formatStateUsing(fn ($state) => Fmt::usd($state)),
+                TextEntry::make('refunded_amount')->label('Refunded')->formatStateUsing(fn ($state) => Fmt::usd($state)),
+                TextEntry::make('cost')->label('Cost')->formatStateUsing(fn ($state) => Fmt::usd($state)),
             ]),
             Section::make('Provider')->columnSpan(2)->columns(2)->schema([
-                TextEntry::make('provider.name')->label('Provider')->placeholder('Làm tay'),
-                TextEntry::make('provider_order_id')->label('Order ID provider')->placeholder('Chưa gửi')->copyable(),
-                TextEntry::make('send_attempts')->label('Số lần gửi'),
-                TextEntry::make('last_checked_at')->label('Kiểm tra lần cuối')->since()->placeholder('—'),
-                TextEntry::make('cancel_requested_at')->label('Yêu cầu huỷ lúc')->dateTime('d/m/Y H:i')->placeholder('—'),
-                TextEntry::make('completed_at')->label('Hoàn thành lúc')->dateTime('d/m/Y H:i')->placeholder('—'),
-                TextEntry::make('provider_error')->label('Lỗi provider')->color('danger')->placeholder('—')->columnSpanFull(),
+                TextEntry::make('provider.name')->label('Provider')->placeholder('Manual'),
+                TextEntry::make('provider_order_id')->label('Order ID provider')->placeholder('Not sent')->copyable(),
+                TextEntry::make('send_attempts')->label('Send attempts'),
+                TextEntry::make('last_checked_at')->label('Last checked')->since()->placeholder('—'),
+                TextEntry::make('cancel_requested_at')->label('Cancel requested at')->dateTime('d/m/Y H:i')->placeholder('—'),
+                TextEntry::make('completed_at')->label('Completed at')->dateTime('d/m/Y H:i')->placeholder('—'),
+                TextEntry::make('provider_error')->label('Provider error')->color('danger')->placeholder('—')->columnSpanFull(),
             ]),
-            Section::make('Ghi chú nội bộ')->columnSpan(1)->schema([
-                TextEntry::make('admin_note')->hiddenLabel()->placeholder('Chưa có ghi chú'),
-                TextEntry::make('created_at')->label('Ngày đặt')->dateTime('d/m/Y H:i'),
+            Section::make('Internal note')->columnSpan(1)->schema([
+                TextEntry::make('admin_note')->hiddenLabel()->placeholder('No notes yet'),
+                TextEntry::make('created_at')->label('Created')->dateTime('d/m/Y H:i'),
             ]),
         ]);
     }
@@ -231,7 +231,7 @@ class OrderResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Đơn cần xử lý: lỗi provider, chờ huỷ hoặc dịch vụ làm tay';
+        return 'Orders needing attention: provider errors, cancel requests or manual services';
     }
 
     public static function getPages(): array

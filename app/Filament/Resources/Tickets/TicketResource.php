@@ -34,7 +34,7 @@ class TicketResource extends Resource
 
     protected static ?string $modelLabel = 'ticket';
 
-    protected static ?string $pluralModelLabel = 'Ticket hỗ trợ';
+    protected static ?string $pluralModelLabel = 'Support tickets';
 
     public static function table(Table $table): Table
     {
@@ -43,16 +43,16 @@ class TicketResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->with('user'))
             ->columns([
                 TextColumn::make('id')->label('ID'),
-                TextColumn::make('subject')->label('Tiêu đề')->searchable()->limit(60)
-                    ->description(fn (Ticket $r) => $r->category->getLabel().($r->order_ids ? " · Đơn: {$r->order_ids}" : '')),
-                TextColumn::make('user.username')->label('Khách')->searchable(),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('last_reply_at')->label('Cập nhật')->since()->sortable(),
+                TextColumn::make('subject')->label('Subject')->searchable()->limit(60)
+                    ->description(fn (Ticket $r) => $r->category->getLabel().($r->order_ids ? " · Orders: {$r->order_ids}" : '')),
+                TextColumn::make('user.username')->label('Customer')->searchable(),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('last_reply_at')->label('Updated')->since()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('status')->label('Trạng thái')->options(TicketStatus::class)->multiple()
+                SelectFilter::make('status')->label('Status')->options(TicketStatus::class)->multiple()
                     ->default([TicketStatus::Open->value, TicketStatus::CustomerReply->value]),
-                SelectFilter::make('category')->label('Loại')->options(TicketCategory::class),
+                SelectFilter::make('category')->label('Type')->options(TicketCategory::class),
             ])
             ->recordActions([ViewAction::make()]);
     }
@@ -60,23 +60,23 @@ class TicketResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->columns(3)->components([
-            Section::make('Hội thoại')->columnSpan(2)->schema([
+            Section::make('Conversation')->columnSpan(2)->schema([
                 RepeatableEntry::make('messages')->hiddenLabel()->contained(false)->schema([
                     TextEntry::make('user.username')->hiddenLabel()->weight('bold')
                         ->badge()->color(fn (TicketMessage $m) => $m->is_staff ? 'success' : 'gray')
-                        ->formatStateUsing(fn (TicketMessage $m) => $m->is_staff ? "Hỗ trợ · {$m->user->username}" : $m->user->username)
+                        ->formatStateUsing(fn (TicketMessage $m) => $m->is_staff ? "Support · {$m->user->username}" : $m->user->username)
                         ->helperText(fn (TicketMessage $m) => $m->created_at->format('d/m/Y H:i')),
                     TextEntry::make('message')->hiddenLabel()->prose()->extraAttributes(['style' => 'white-space: pre-line']),
                     ImageEntry::make('attachments')->hiddenLabel()->disk('public')->imageHeight(120)
                         ->visible(fn (TicketMessage $m) => ! empty($m->attachments)),
                 ]),
             ]),
-            Section::make('Thông tin')->columnSpan(1)->schema([
-                TextEntry::make('status')->label('Trạng thái')->badge(),
-                TextEntry::make('category')->label('Loại')->badge()->color('gray'),
-                TextEntry::make('user.username')->label('Khách')->helperText(fn (Ticket $r) => $r->user->email),
-                TextEntry::make('order_ids')->label('Đơn liên quan')->placeholder('—')->copyable(),
-                TextEntry::make('created_at')->label('Tạo lúc')->dateTime('d/m/Y H:i'),
+            Section::make('Details')->columnSpan(1)->schema([
+                TextEntry::make('status')->label('Status')->badge(),
+                TextEntry::make('category')->label('Type')->badge()->color('gray'),
+                TextEntry::make('user.username')->label('Customer')->helperText(fn (Ticket $r) => $r->user->email),
+                TextEntry::make('order_ids')->label('Related orders')->placeholder('—')->copyable(),
+                TextEntry::make('created_at')->label('Created')->dateTime('d/m/Y H:i'),
             ]),
         ]);
     }

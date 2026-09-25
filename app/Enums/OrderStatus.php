@@ -57,13 +57,13 @@ enum OrderStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Pending => 'Chờ xử lý',
-            self::Processing => 'Đang xử lý',
-            self::InProgress => 'Đang chạy',
-            self::Completed => 'Hoàn thành',
-            self::Partial => 'Hoàn thành một phần',
-            self::Canceled => 'Đã huỷ',
-            self::Refunded => 'Đã hoàn tiền',
+            self::Pending => 'Pending',
+            self::Processing => 'Processing',
+            self::InProgress => 'In progress',
+            self::Completed => 'Completed',
+            self::Partial => 'Partial',
+            self::Canceled => 'Canceled',
+            self::Refunded => 'Refunded',
         };
     }
 

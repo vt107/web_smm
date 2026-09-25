@@ -41,7 +41,7 @@ class TicketController extends Controller
             $request->file('attachments', []),
         );
 
-        return response()->json(['message' => 'Đã gửi ticket', 'ticket' => new TicketResource($ticket)], 201);
+        return response()->json(['message' => 'Ticket submitted', 'ticket' => new TicketResource($ticket)], 201);
     }
 
     public function show(Request $request, int $ticket): TicketResource
@@ -55,14 +55,14 @@ class TicketController extends Controller
 
         $this->tickets->reply($this->find($request, $ticket), $request->user(), $data['message'], false, $request->file('attachments', []));
 
-        return response()->json(['message' => 'Đã gửi phản hồi']);
+        return response()->json(['message' => 'Reply sent']);
     }
 
     public function close(Request $request, int $ticket): JsonResponse
     {
         $this->tickets->close($this->find($request, $ticket));
 
-        return response()->json(['message' => 'Đã đóng ticket']);
+        return response()->json(['message' => 'Ticket closed']);
     }
 
     private function find(Request $request, int $id): Ticket

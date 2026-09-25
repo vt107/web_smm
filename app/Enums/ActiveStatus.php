@@ -13,8 +13,8 @@ enum ActiveStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Active => 'Hoạt động',
-            self::Disabled => 'Tắt',
+            self::Active => 'Active',
+            self::Disabled => 'Disabled',
         };
     }
 

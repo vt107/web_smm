@@ -67,7 +67,7 @@ class DepositController extends Controller
         $deposit = $this->deposits->claim($request->user(), $method, $data['txid']);
 
         return response()->json([
-            'message' => 'Đã cộng tiền vào tài khoản',
+            'message' => 'Funds added to your account',
             'deposit' => new DepositResource($deposit->load('paymentMethod')),
         ]);
     }

@@ -27,9 +27,9 @@ class DepositResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = NavGroup::FINANCE;
 
-    protected static ?string $modelLabel = 'phiếu nạp';
+    protected static ?string $modelLabel = 'deposit';
 
-    protected static ?string $pluralModelLabel = 'Phiếu nạp';
+    protected static ?string $pluralModelLabel = 'Deposits';
 
     protected static ?int $navigationSort = 1;
 
@@ -39,28 +39,28 @@ class DepositResource extends Resource
             ->defaultSort('id', 'desc')
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['user', 'paymentMethod']))
             ->columns([
-                TextColumn::make('code')->label('Mã phiếu')->searchable()->copyable()->weight('bold'),
-                TextColumn::make('user.username')->label('Khách')->searchable(),
-                TextColumn::make('paymentMethod.name')->label('Kênh'),
-                TextColumn::make('paid_amount')->label('Cần chuyển')
+                TextColumn::make('code')->label('Deposit code')->searchable()->copyable()->weight('bold'),
+                TextColumn::make('user.username')->label('Customer')->searchable(),
+                TextColumn::make('paymentMethod.name')->label('Method'),
+                TextColumn::make('paid_amount')->label('To pay')
                     ->formatStateUsing(fn (Deposit $r) => Money::format($r->paid_amount).' '.$r->paid_currency)
                     ->description(fn (Deposit $r) => '≈ '.Fmt::usd($r->requested_amount)),
-                TextColumn::make('amount')->label('Đã cộng')->placeholder('—')
+                TextColumn::make('amount')->label('Credited')->placeholder('—')
                     ->formatStateUsing(fn ($state) => Fmt::usd($state))
                     ->description(fn (Deposit $r) => Money::isPositive($r->bonus) ? '+ bonus '.Fmt::usd($r->bonus) : null),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('matched_by')->label('Khớp bởi')->placeholder('—')->toggleable(),
-                TextColumn::make('created_at')->label('Tạo lúc')->dateTime('d/m/Y H:i')->sortable(),
-                TextColumn::make('paid_at')->label('Thanh toán lúc')->dateTime('d/m/Y H:i')->placeholder('—')->toggleable(),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('matched_by')->label('Matched by')->placeholder('—')->toggleable(),
+                TextColumn::make('created_at')->label('Created')->dateTime('d/m/Y H:i')->sortable(),
+                TextColumn::make('paid_at')->label('Paid at')->dateTime('d/m/Y H:i')->placeholder('—')->toggleable(),
             ])
             ->filters([
-                SelectFilter::make('status')->label('Trạng thái')->options(DepositStatus::class),
-                SelectFilter::make('payment_method_id')->label('Kênh')->relationship('paymentMethod', 'name'),
-                SelectFilter::make('matched_by')->label('Khớp bởi')->options(DepositMatchedBy::class),
+                SelectFilter::make('status')->label('Status')->options(DepositStatus::class),
+                SelectFilter::make('payment_method_id')->label('Method')->relationship('paymentMethod', 'name'),
+                SelectFilter::make('matched_by')->label('Matched by')->options(DepositMatchedBy::class),
             ])
             ->recordActions([
                 Action::make('cancel')
-                    ->label('Huỷ phiếu')
+                    ->label('Cancel deposit')
                     ->icon(Heroicon::OutlinedXMark)
                     ->color('danger')
                     ->requiresConfirmation()

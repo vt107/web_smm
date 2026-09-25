@@ -15,10 +15,10 @@ enum TicketStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Open => 'Đang mở',
-            self::Answered => 'Đã trả lời',
-            self::CustomerReply => 'Khách phản hồi',
-            self::Closed => 'Đã đóng',
+            self::Open => 'Open',
+            self::Answered => 'Answered',
+            self::CustomerReply => 'Customer replied',
+            self::Closed => 'Closed',
         };
     }
 

@@ -13,9 +13,9 @@ enum DepositMatchedBy: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Auto => 'Tự động',
-            self::UserClaim => 'Khách tự nhận',
-            self::Admin => 'Admin gán',
+            self::Auto => 'Automatic',
+            self::UserClaim => 'Customer claim',
+            self::Admin => 'Admin assigned',
         };
     }
 }

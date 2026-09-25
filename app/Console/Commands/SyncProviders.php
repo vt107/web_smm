@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 class SyncProviders extends Command
 {
-    protected $signature = 'providers:sync {provider? : ID provider, bỏ trống = tất cả}';
+    protected $signature = 'providers:sync {provider? : Provider ID, empty = all}';
 
-    protected $description = 'Đồng bộ giá vốn, min/max, trạng thái dịch vụ và số dư từ provider';
+    protected $description = 'Sync costs, min/max, service status and balance from providers';
 
     public function handle(ServiceSyncService $sync): int
     {

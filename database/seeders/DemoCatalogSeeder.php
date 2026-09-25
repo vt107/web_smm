@@ -42,7 +42,7 @@ class DemoCatalogSeeder extends Seeder
             }
         }
 
-        $this->command?->info("Đã tạo/cập nhật {$count} dịch vụ mẫu.");
+        $this->command?->info("Seeded {$count} demo services.");
         $this->seedDemoCustomer();
     }
 
@@ -55,46 +55,46 @@ class DemoCatalogSeeder extends Seeder
 
         return [
             [Platform::Instagram, 'Instagram Followers', [
-                ['Instagram Followers [Giá rẻ] [Không bảo hành]', '0.90', 50, 50000, $default, null, false, true, 'Bắt đầu: 0–1 giờ · Tốc độ: 10K/ngày · Có thể tụt.'],
-                ['Instagram Followers [Chất lượng cao] [Bảo hành 30 ngày]', '2.40', 100, 100000, $default, 30, true, true, 'Bắt đầu: 0–30 phút · Tốc độ: 20K/ngày · Tài khoản có ảnh đại diện.'],
+                ['Instagram Followers [Cheap] [No Refill]', '0.90', 50, 50000, $default, null, false, true, 'Start: 0–1 hour · Speed: 10K/day · Drops possible.'],
+                ['Instagram Followers [High Quality] [30 Days Refill]', '2.40', 100, 100000, $default, 30, true, true, 'Start: 0–30 min · Speed: 20K/day · Accounts with profile pictures.'],
             ]],
             [Platform::Instagram, 'Instagram Likes & Views', [
-                ['Instagram Likes [Nhanh]', '0.25', 20, 50000, $default, null, true, true, 'Bắt đầu: tức thì · Tốc độ: 50K/ngày.'],
-                ['Instagram Reels Views', '0.03', 100, 10000000, $default, null, false, true, 'Bắt đầu: tức thì · Tốc độ: 1M/ngày.'],
-                ['Instagram Custom Comments', '12.00', 5, 1000, ServiceType::CustomComments, null, false, false, 'Mỗi dòng 1 bình luận · Bắt đầu: 0–2 giờ.'],
+                ['Instagram Likes [Nhanh]', '0.25', 20, 50000, $default, null, true, true, 'Start: instant · Speed: 50K/day.'],
+                ['Instagram Reels Views', '0.03', 100, 10000000, $default, null, false, true, 'Start: instant · Speed: 1M/day.'],
+                ['Instagram Custom Comments', '12.00', 5, 1000, ServiceType::CustomComments, null, false, false, 'One comment per line · Start: 0–2 hours.'],
             ]],
             [Platform::TikTok, 'TikTok Followers', [
-                ['TikTok Followers [Bảo hành 30 ngày]', '1.80', 100, 100000, $default, 30, true, true, 'Bắt đầu: 0–1 giờ · Tốc độ: 10K/ngày.'],
+                ['TikTok Followers [30 Days Refill]', '1.80', 100, 100000, $default, 30, true, true, 'Start: 0–1 hour · Speed: 10K/day.'],
             ]],
             [Platform::TikTok, 'TikTok Likes & Views', [
-                ['TikTok Likes', '0.35', 50, 100000, $default, null, true, true, 'Bắt đầu: tức thì · Tốc độ: 50K/ngày.'],
-                ['TikTok Views', '0.01', 100, 100000000, $default, null, false, true, 'Bắt đầu: tức thì · Tốc độ: 5M/ngày.'],
-                ['TikTok Shares', '0.60', 50, 100000, $default, null, false, false, 'Bắt đầu: 0–1 giờ.'],
+                ['TikTok Likes', '0.35', 50, 100000, $default, null, true, true, 'Start: instant · Speed: 50K/day.'],
+                ['TikTok Views', '0.01', 100, 100000000, $default, null, false, true, 'Start: instant · Speed: 5M/day.'],
+                ['TikTok Shares', '0.60', 50, 100000, $default, null, false, false, 'Start: 0–1 hour.'],
             ]],
             [Platform::YouTube, 'YouTube', [
-                ['YouTube Views [Có thời gian xem]', '1.50', 500, 1000000, $default, 30, false, true, 'Bắt đầu: 0–6 giờ · Tốc độ: 5K/ngày · Retention 1–3 phút.'],
-                ['YouTube Subscribers [Bảo hành 30 ngày]', '14.00', 50, 20000, $default, 30, false, false, 'Bắt đầu: 0–12 giờ · Tốc độ: 500/ngày.'],
-                ['YouTube Likes', '1.20', 20, 50000, $default, 30, true, false, 'Bắt đầu: 0–1 giờ.'],
-                ['YouTube 4000 giờ xem (gói)', '45.00', 1, 1, ServiceType::Package, null, false, false, 'Gói 4000 giờ xem cho video dài trên 1 giờ · Hoàn thành 7–15 ngày.'],
+                ['YouTube Views [With Watch Time]', '1.50', 500, 1000000, $default, 30, false, true, 'Start: 0–6 hours · Speed: 5K/day · Retention 1–3 min.'],
+                ['YouTube Subscribers [30 Days Refill]', '14.00', 50, 20000, $default, 30, false, false, 'Start: 0–12 hours · Speed: 500/day.'],
+                ['YouTube Likes', '1.20', 20, 50000, $default, 30, true, false, 'Start: 0–1 hour.'],
+                ['YouTube 4000 Watch Hours (package)', '45.00', 1, 1, ServiceType::Package, null, false, false, '4000 watch hours package for videos over 1 hour · Completes in 7–15 days.'],
             ]],
             [Platform::Facebook, 'Facebook', [
-                ['Facebook Page Likes + Followers', '2.50', 100, 50000, $default, 30, true, false, 'Bắt đầu: 0–2 giờ · Tốc độ: 5K/ngày.'],
-                ['Facebook Post Likes', '0.90', 50, 50000, $default, null, true, true, 'Bắt đầu: 0–30 phút.'],
-                ['Facebook Video Views', '0.40', 500, 5000000, $default, null, false, true, 'Bắt đầu: 0–1 giờ · Tốc độ: 100K/ngày.'],
+                ['Facebook Page Likes + Followers', '2.50', 100, 50000, $default, 30, true, false, 'Start: 0–2 hours · Speed: 5K/day.'],
+                ['Facebook Post Likes', '0.90', 50, 50000, $default, null, true, true, 'Start: 0–30 min.'],
+                ['Facebook Video Views', '0.40', 500, 5000000, $default, null, false, true, 'Start: 0–1 hour · Speed: 100K/day.'],
             ]],
             [Platform::Telegram, 'Telegram', [
-                ['Telegram Channel Members [Bảo hành 15 ngày]', '1.10', 100, 100000, $default, 15, true, true, 'Bắt đầu: 0–1 giờ · Tốc độ: 20K/ngày.'],
-                ['Telegram Post Views (1 bài)', '0.05', 100, 1000000, $default, null, false, false, 'Bắt đầu: tức thì.'],
-                ['Telegram Poll Votes', '0.80', 50, 100000, ServiceType::Poll, null, false, false, 'Nhập số thứ tự đáp án cần bình chọn.'],
+                ['Telegram Channel Members [15 Days Refill]', '1.10', 100, 100000, $default, 15, true, true, 'Start: 0–1 hour · Speed: 20K/day.'],
+                ['Telegram Post Views (1 post)', '0.05', 100, 1000000, $default, null, false, false, 'Start: instant.'],
+                ['Telegram Poll Votes', '0.80', 50, 100000, ServiceType::Poll, null, false, false, 'Enter the number of the poll answer to vote for.'],
             ]],
             [Platform::Twitter, 'Twitter (X)', [
-                ['Twitter Followers', '3.50', 100, 50000, $default, 30, true, false, 'Bắt đầu: 0–2 giờ · Tốc độ: 5K/ngày.'],
-                ['Twitter Likes', '1.50', 20, 20000, $default, null, true, true, 'Bắt đầu: 0–30 phút.'],
-                ['Twitter Mentions (danh sách username)', '6.00', 10, 5000, ServiceType::MentionsCustomList, null, false, false, 'Mỗi dòng 1 username cần mention.'],
+                ['Twitter Followers', '3.50', 100, 50000, $default, 30, true, false, 'Start: 0–2 hours · Speed: 5K/day.'],
+                ['Twitter Likes', '1.50', 20, 20000, $default, null, true, true, 'Start: 0–30 min.'],
+                ['Twitter Mentions (custom usernames)', '6.00', 10, 5000, ServiceType::MentionsCustomList, null, false, false, 'One username to mention per line.'],
             ]],
             [Platform::Spotify, 'Spotify', [
-                ['Spotify Plays', '0.90', 1000, 10000000, $default, 30, false, true, 'Bắt đầu: 0–24 giờ · Tốc độ: 50K/ngày · Lượt nghe từ nhiều quốc gia.'],
-                ['Spotify Followers (nghệ sĩ / playlist)', '1.20', 100, 100000, $default, 30, true, false, 'Bắt đầu: 0–12 giờ.'],
+                ['Spotify Plays', '0.90', 1000, 10000000, $default, 30, false, true, 'Start: 0–24 hours · Speed: 50K/day · Worldwide plays.'],
+                ['Spotify Followers (artist / playlist)', '1.20', 100, 100000, $default, 30, true, false, 'Start: 0–12 hours.'],
             ]],
         ];
     }
@@ -127,15 +127,15 @@ class DemoCatalogSeeder extends Seeder
     private function seedDemoCustomer(): void
     {
         $user = User::query()->firstOrCreate(['email' => self::DEMO_EMAIL], [
-            'name' => 'Khách Demo',
+            'name' => 'Demo Customer',
             'username' => 'demo',
             'password' => self::DEMO_PASSWORD,
         ]);
 
         if ($user->wasRecentlyCreated) {
-            app(BalanceService::class)->change($user, '100', TransactionType::AdminAdd, description: 'Số dư test');
+            app(BalanceService::class)->change($user, '100', TransactionType::AdminAdd, description: 'Test balance');
         }
 
-        $this->command?->info('Tài khoản khách: '.self::DEMO_EMAIL.' / '.self::DEMO_PASSWORD.' (số dư $'.Money::format($user->fresh()->balance).')');
+        $this->command?->info('Customer account: '.self::DEMO_EMAIL.' / '.self::DEMO_PASSWORD.' (balance $'.Money::format($user->fresh()->balance).')');
     }
 }

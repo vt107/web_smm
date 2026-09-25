@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('ref_code', 20)->unique();
             $table->foreignId('referred_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('timezone', 50)->default('Asia/Ho_Chi_Minh');
-            $table->string('locale', 10)->default('vi');
+            $table->string('locale', 10)->default('en');
             $table->timestamp('last_login_at')->nullable();
             $table->string('last_login_ip', 45)->nullable();
             $table->rememberToken();

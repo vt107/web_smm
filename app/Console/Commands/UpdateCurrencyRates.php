@@ -10,7 +10,7 @@ class UpdateCurrencyRates extends Command
 {
     protected $signature = 'currencies:update-rates';
 
-    protected $description = 'Cập nhật tỉ giá hiển thị (so với USD) cho các tiền tệ bật auto_update';
+    protected $description = 'Update display exchange rates (vs USD) for auto-update currencies';
 
     public function handle(): int
     {

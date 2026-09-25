@@ -11,10 +11,10 @@ class ImportProviderServices extends Command
 {
     protected $signature = 'providers:import
         {provider : ID provider}
-        {--markup=30 : % lãi cộng vào giá vốn}
-        {--only= : Chỉ import các service ID của provider, phân tách bằng dấu phẩy}';
+        {--markup=30 : Markup % over cost}
+        {--only= : Only import these provider service IDs, comma separated}';
 
-    protected $description = 'Tạo dịch vụ mới từ danh sách dịch vụ của provider (bỏ qua dịch vụ đã có)';
+    protected $description = 'Create services from the provider service list (skips already imported ones)';
 
     public function handle(ServiceSyncService $sync): int
     {

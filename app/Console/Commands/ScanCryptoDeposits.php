@@ -12,7 +12,7 @@ class ScanCryptoDeposits extends Command
 {
     protected $signature = 'deposits:scan';
 
-    protected $description = 'Quét giao dịch vào các ví crypto và tự khớp phiếu nạp';
+    protected $description = 'Scan crypto wallets for incoming transfers and match deposits';
 
     public function handle(CryptoScanService $scanner): int
     {

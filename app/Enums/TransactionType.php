@@ -25,14 +25,14 @@ enum TransactionType: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Deposit => 'Nạp tiền',
-            self::DepositBonus => 'Bonus nạp',
-            self::Order => 'Đặt đơn',
-            self::Refund => 'Hoàn tiền',
-            self::PartialRefund => 'Hoàn một phần',
-            self::AdminAdd => 'Admin cộng',
-            self::AdminDeduct => 'Admin trừ',
-            self::Referral => 'Hoa hồng',
+            self::Deposit => 'Deposit',
+            self::DepositBonus => 'Deposit bonus',
+            self::Order => 'Order',
+            self::Refund => 'Refund',
+            self::PartialRefund => 'Partial refund',
+            self::AdminAdd => 'Admin credit',
+            self::AdminDeduct => 'Admin debit',
+            self::Referral => 'Referral commission',
         };
     }
 

@@ -6,11 +6,11 @@
                     <h2 class="font-semibold" x-text="ticket.subject"></h2>
                     <p class="text-sm text-slate-500">
                         <span x-text="ticket.category_label"></span>
-                        <span x-show="ticket.order_ids" x-text="' · Đơn: ' + ticket.order_ids"></span>
+                        <span x-show="ticket.order_ids" x-text="' · Orders: ' + ticket.order_ids"></span>
                     </p>
                 </div>
                 <span :class="'badge-' + ticket.status_color" x-text="ticket.status_label"></span>
-                <button x-show="!ticket.is_closed" class="btn-secondary btn-sm" @click="close()">Đóng ticket</button>
+                <button x-show="!ticket.is_closed" class="btn-secondary btn-sm" @click="close()">Close ticket</button>
             </div>
         </template>
 
@@ -30,13 +30,13 @@
         </template>
 
         <form class="card space-y-3" @submit.prevent="reply()">
-            <label class="label">Trả lời</label>
+            <label class="label">Reply</label>
             <textarea class="input" rows="4" x-model="message" required></textarea>
             <div class="flex items-center justify-between">
                 <input type="file" accept="image/*" multiple x-ref="files" class="text-sm">
-                <button class="btn-primary" :disabled="busy">Gửi</button>
+                <button class="btn-primary" :disabled="busy">Send</button>
             </div>
-            <p x-show="ticket?.is_closed" class="hint">Ticket đã đóng, gửi trả lời sẽ mở lại ticket.</p>
+            <p x-show="ticket?.is_closed" class="hint">This ticket is closed. Replying will reopen it.</p>
         </form>
     </div>
 
@@ -65,7 +65,7 @@
                         }
                     },
                     async close() {
-                        if (!confirm('Đóng ticket này?')) return;
+                        if (!confirm('Close this ticket?')) return;
                         toast((await api.post(`/ajax/tickets/${id}/close`)).message);
                         this.load();
                     },

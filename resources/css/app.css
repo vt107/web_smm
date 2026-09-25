@@ -7,8 +7,80 @@
 /* Class badge được ghép động trong JS ('badge-' + color) nên phải khai báo sẵn. */
 @source inline('badge-{gray,info,primary,success,warning,danger}');
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    /* Nền card/panel và màu nút chính: dùng token riêng để không bị đảo màu ở chế độ tối. */
+    --color-surface: #ffffff;
+    --color-brand: oklch(51.1% 0.262 276.966);
+    --color-brand-hover: oklch(45.7% 0.24 277.023);
+}
+
+/*
+ * Chế độ tối: thay vì thêm dark: vào từng class, đảo thang màu slate (nền sáng ↔ tối, chữ tối ↔ sáng)
+ * và làm dịu các màu nhấn. Màu phải giữ nguyên ở cả 2 chế độ (toast, khối code) dùng thang gray.
+ */
+.dark {
+    color-scheme: dark;
+    --color-surface: oklch(20.8% 0.042 265.755);
+    --color-slate-50: oklch(12.9% 0.042 264.695);
+    --color-slate-100: oklch(27.9% 0.041 260.031);
+    --color-slate-200: oklch(27.9% 0.041 260.031);
+    --color-slate-300: oklch(37.2% 0.044 257.287);
+    --color-slate-400: oklch(55.4% 0.046 257.417);
+    --color-slate-500: oklch(70.4% 0.04 256.788);
+    --color-slate-600: oklch(86.9% 0.022 252.894);
+    --color-slate-700: oklch(92.9% 0.013 255.508);
+    --color-slate-800: oklch(96.8% 0.007 247.896);
+    --color-slate-900: oklch(98.4% 0.003 247.858);
+    --color-slate-950: oklch(98.4% 0.003 247.858);
+    --color-indigo-50: oklch(25.7% 0.09 281.288);
+    --color-indigo-100: oklch(35.9% 0.144 278.697);
+    --color-indigo-200: oklch(39.8% 0.195 277.366);
+    --color-indigo-600: oklch(67.3% 0.182 276.935);
+    --color-indigo-700: oklch(78.5% 0.115 274.713);
+    --color-indigo-800: oklch(87% 0.065 274.039);
+    --color-emerald-50: oklch(26.2% 0.051 172.552);
+    --color-emerald-100: oklch(37.8% 0.077 168.94);
+    --color-emerald-200: oklch(43.2% 0.095 166.913);
+    --color-emerald-600: oklch(76.5% 0.177 163.223);
+    --color-emerald-700: oklch(84.5% 0.143 164.978);
+    --color-emerald-800: oklch(90.5% 0.093 164.15);
+    --color-red-50: oklch(25.8% 0.092 26.042);
+    --color-red-100: oklch(39.6% 0.141 25.723);
+    --color-red-200: oklch(44.4% 0.177 26.899);
+    --color-red-600: oklch(70.4% 0.191 22.216);
+    --color-red-700: oklch(80.8% 0.114 19.571);
+    --color-red-800: oklch(88.5% 0.062 18.334);
+    --color-amber-50: oklch(27.9% 0.077 45.635);
+    --color-amber-100: oklch(41.4% 0.112 45.904);
+    --color-amber-200: oklch(47.3% 0.137 46.201);
+    --color-amber-600: oklch(82.8% 0.189 84.429);
+    --color-amber-700: oklch(87.9% 0.169 91.605);
+    --color-amber-800: oklch(92.4% 0.12 95.746);
+    --color-sky-50: oklch(29.3% 0.066 243.157);
+    --color-sky-100: oklch(39.1% 0.09 240.876);
+    --color-sky-200: oklch(44.3% 0.11 240.79);
+    --color-sky-600: oklch(74.6% 0.16 232.661);
+    --color-sky-700: oklch(82.8% 0.111 230.318);
+    --color-sky-800: oklch(90.1% 0.058 230.902);
+}
+
+/* Ẩn thanh banner / tooltip mặc định của Google Translate (dùng select riêng ở header). */
+iframe.skiptranslate,
+.skiptranslate > iframe,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+    display: none !important;
+}
+body {
+    top: 0 !important;
+}
+.goog-text-highlight {
+    background: none !important;
+    box-shadow: none !important;
 }
 
 [x-cloak] {
@@ -17,7 +89,7 @@
 
 /* Class dùng chung (Tailwind v4: @utility để có thể @apply lẫn nhau). */
 @utility card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-xl border border-slate-200 bg-surface p-5 shadow-sm;
 }
 @utility card-title {
     @apply mb-4 text-base font-semibold text-slate-900;
@@ -26,7 +98,7 @@
     @apply mb-1 block text-sm font-medium text-slate-700;
 }
 @utility input {
-    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none disabled:bg-slate-50;
+    @apply block w-full rounded-lg border border-slate-300 bg-surface px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none disabled:bg-slate-50;
 }
 @utility hint {
     @apply mt-1 text-xs text-slate-500;
@@ -35,13 +107,13 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-    @apply btn bg-indigo-600 text-white hover:bg-indigo-700;
+    @apply btn bg-brand text-white hover:bg-brand-hover;
 }
 @utility btn-secondary {
-    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    @apply btn border border-slate-300 bg-surface text-slate-700 hover:bg-slate-50;
 }
 @utility btn-danger {
-    @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50;
+    @apply btn border border-red-200 bg-surface text-red-600 hover:bg-red-50;
 }
 @utility btn-sm {
     @apply px-2.5 py-1 text-xs;

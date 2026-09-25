@@ -12,8 +12,8 @@ enum PaymentGateway: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Sepay => 'SePay (chuyển khoản)',
-            self::Crypto => 'Crypto (tự quét ví)',
+            self::Sepay => 'SePay (bank transfer)',
+            self::Crypto => 'Crypto (wallet scan)',
         };
     }
 }

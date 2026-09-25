@@ -22,10 +22,10 @@ enum TicketCategory: string implements HasLabel
     {
         return match ($this) {
             self::Refill => 'Refill',
-            self::Cancel => 'Huỷ đơn',
-            self::SpeedUp => 'Tăng tốc',
-            self::Payment => 'Thanh toán',
-            self::Other => 'Khác',
+            self::Cancel => 'Cancel',
+            self::SpeedUp => 'Speed up',
+            self::Payment => 'Payment',
+            self::Other => 'Other',
         };
     }
 }

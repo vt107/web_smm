@@ -16,11 +16,11 @@ enum ServiceUpdateType: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::New => 'Dịch vụ mới',
-            self::PriceIncrease => 'Tăng giá',
-            self::PriceDecrease => 'Giảm giá',
-            self::Enabled => 'Bật lại',
-            self::Disabled => 'Tạm tắt',
+            self::New => 'New service',
+            self::PriceIncrease => 'Price increased',
+            self::PriceDecrease => 'Discount',
+            self::Enabled => 'Re-enabled',
+            self::Disabled => 'Disabled',
         };
     }
 

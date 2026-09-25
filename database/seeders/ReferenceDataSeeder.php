@@ -24,13 +24,16 @@ class ReferenceDataSeeder extends Seeder
 
         // Tỉ giá ban đầu – lệnh currencies:update-rates cập nhật hằng ngày.
         $currencies = [
-            ['code' => 'USD', 'name' => 'Đô la Mỹ', 'symbol' => '$', 'symbol_position' => 'before', 'rate' => 1, 'decimals' => 4, 'auto_update' => false],
-            ['code' => 'VND', 'name' => 'Việt Nam Đồng', 'symbol' => '₫', 'symbol_position' => 'after', 'rate' => 26000, 'decimals' => 0, 'auto_update' => true],
-            ['code' => 'THB', 'name' => 'Baht Thái', 'symbol' => '฿', 'symbol_position' => 'before', 'rate' => 32.5, 'decimals' => 2, 'auto_update' => true],
+            ['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$', 'symbol_position' => 'before', 'rate' => 1, 'decimals' => 4, 'auto_update' => false],
+            ['code' => 'VND', 'name' => 'Vietnamese Dong', 'symbol' => '₫', 'symbol_position' => 'after', 'rate' => 26000, 'decimals' => 0, 'auto_update' => true],
+            ['code' => 'THB', 'name' => 'Thai Baht', 'symbol' => '฿', 'symbol_position' => 'before', 'rate' => 32.5, 'decimals' => 2, 'auto_update' => true],
         ];
 
         foreach ($currencies as $currency) {
-            Currency::query()->firstOrCreate(['code' => $currency['code']], $currency + ['status' => 'active']);
+            // Tỉ giá chỉ đặt lần đầu (sau đó cron cập nhật), tên/ký hiệu luôn đồng bộ theo seeder.
+            Currency::query()
+                ->firstOrCreate(['code' => $currency['code']], $currency + ['status' => 'active'])
+                ->update(collect($currency)->only(['name', 'symbol', 'symbol_position', 'decimals'])->all());
         }
     }
 }

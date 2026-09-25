@@ -43,7 +43,7 @@ class OrderController extends Controller
         $order = $this->orders->place($request->user(), $service, $request->except(['service']), OrderSource::Web);
 
         return response()->json([
-            'message' => "Đã đặt đơn #{$order->id}",
+            'message' => "Order #{$order->id} placed",
             'order' => new OrderResource($order->load('service')),
         ], 201);
     }
@@ -55,7 +55,7 @@ class OrderController extends Controller
         $results = collect($this->orders->placeMass($request->user(), $request->input('orders')));
 
         return response()->json([
-            'message' => 'Đã đặt '.$results->whereNotNull('order')->count().'/'.$results->count().' đơn',
+            'message' => 'Placed '.$results->whereNotNull('order')->count().'/'.$results->count().' orders',
             'results' => $results,
         ]);
     }
@@ -64,14 +64,14 @@ class OrderController extends Controller
     {
         $this->orders->requestCancel($this->find($request, $order));
 
-        return response()->json(['message' => 'Đã gửi yêu cầu huỷ đơn']);
+        return response()->json(['message' => 'Cancel request sent']);
     }
 
     public function refill(Request $request, int $order): JsonResponse
     {
         $this->orders->requestRefill($this->find($request, $order));
 
-        return response()->json(['message' => 'Đã gửi yêu cầu refill']);
+        return response()->json(['message' => 'Refill request sent']);
     }
 
     private function find(Request $request, int $id): Order

@@ -38,18 +38,18 @@ class StatsOverview extends StatsOverviewWidget
             ->count();
 
         return [
-            Stat::make('Doanh thu hôm nay', Fmt::usd($revenue))
-                ->description((clone $orders)->count().' đơn · lãi ước tính '.Fmt::usd(Money::sub($revenue, $cost))),
-            Stat::make('Nạp tiền hôm nay', Fmt::usd((string) $deposits->sum('amount')))
-                ->description($deposits->count().' phiếu'),
-            Stat::make('Khách mới hôm nay', (string) User::query()->where('created_at', '>=', $today)->count())
-                ->description('Tổng số dư khách: '.Fmt::usd((string) User::query()->sum('balance'))),
-            Stat::make('Đơn đang chạy', (string) Order::query()->whereIn('status', OrderStatus::active())->count())
-                ->description("{$attention} đơn cần xử lý")
+            Stat::make('Revenue today', Fmt::usd($revenue))
+                ->description((clone $orders)->count().' orders · est. profit '.Fmt::usd(Money::sub($revenue, $cost))),
+            Stat::make('Deposits today', Fmt::usd((string) $deposits->sum('amount')))
+                ->description($deposits->count().' deposits'),
+            Stat::make('New customers today', (string) User::query()->where('created_at', '>=', $today)->count())
+                ->description('Total customer balance: '.Fmt::usd((string) User::query()->sum('balance'))),
+            Stat::make('Active orders', (string) Order::query()->whereIn('status', OrderStatus::active())->count())
+                ->description("{$attention} need attention")
                 ->color($attention ? 'danger' : 'success'),
-            Stat::make('Chờ xử lý', (string) Ticket::query()->whereIn('status', [TicketStatus::Open, TicketStatus::CustomerReply])->count().' ticket')
-                ->description(IncomingTransfer::query()->where('status', TransferStatus::Unmatched)->count().' giao dịch nạp chưa khớp'),
-            Stat::make('Số dư provider', Fmt::usd((string) Provider::query()->sum('balance')))
+            Stat::make('Pending', (string) Ticket::query()->whereIn('status', [TicketStatus::Open, TicketStatus::CustomerReply])->count().' ticket')
+                ->description(IncomingTransfer::query()->where('status', TransferStatus::Unmatched)->count().' unmatched deposit transactions'),
+            Stat::make('Provider balance', Fmt::usd((string) Provider::query()->sum('balance')))
                 ->description(Provider::query()->count().' provider'),
         ];
     }

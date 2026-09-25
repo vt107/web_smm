@@ -27,23 +27,23 @@ class CurrencyResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = NavGroup::SYSTEM;
 
-    protected static ?string $modelLabel = 'tiền tệ';
+    protected static ?string $modelLabel = 'currency';
 
-    protected static ?string $pluralModelLabel = 'Tiền tệ hiển thị';
+    protected static ?string $pluralModelLabel = 'Display currencies';
 
     public static function form(Schema $schema): Schema
     {
         return $schema->columns(2)->components([
-            TextInput::make('code')->label('Mã')->required()->length(3)->alpha()
+            TextInput::make('code')->label('Code')->required()->length(3)->alpha()
                 ->unique(ignoreRecord: true)->disabledOn('edit'),
-            TextInput::make('name')->label('Tên')->required()->maxLength(50),
-            TextInput::make('symbol')->label('Ký hiệu')->required()->maxLength(5),
-            Select::make('symbol_position')->label('Vị trí ký hiệu')->required()->default('before')
-                ->options(['before' => 'Trước ($1.20)', 'after' => 'Sau (30.000 ₫)']),
-            TextInput::make('rate')->label('Tỉ giá (= 1 USD)')->numeric()->minValue(0.000001)->required(),
-            TextInput::make('decimals')->label('Số chữ số lẻ')->integer()->minValue(0)->maxValue(6)->required()->default(2),
-            Toggle::make('auto_update')->label('Tự cập nhật tỉ giá hằng ngày'),
-            Select::make('status')->label('Trạng thái')->options(ActiveStatus::class)->required()->default(ActiveStatus::Active),
+            TextInput::make('name')->label('Name')->required()->maxLength(50),
+            TextInput::make('symbol')->label('Symbol')->required()->maxLength(5),
+            Select::make('symbol_position')->label('Symbol position')->required()->default('before')
+                ->options(['before' => 'Before ($1.20)', 'after' => 'Sau (30.000 ₫)']),
+            TextInput::make('rate')->label('Exchange rate (per 1 USD)')->numeric()->minValue(0.000001)->required(),
+            TextInput::make('decimals')->label('Decimals')->integer()->minValue(0)->maxValue(6)->required()->default(2),
+            Toggle::make('auto_update')->label('Update exchange rate daily'),
+            Select::make('status')->label('Status')->options(ActiveStatus::class)->required()->default(ActiveStatus::Active),
         ]);
     }
 
@@ -51,13 +51,13 @@ class CurrencyResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('code')->label('Mã')->weight('bold'),
-                TextColumn::make('name')->label('Tên'),
-                TextColumn::make('symbol')->label('Ký hiệu'),
-                TextColumn::make('rate')->label('Tỉ giá / 1 USD')->numeric(decimalPlaces: 4),
-                IconColumn::make('auto_update')->label('Tự cập nhật')->boolean(),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('updated_at')->label('Cập nhật')->since(),
+                TextColumn::make('code')->label('Code')->weight('bold'),
+                TextColumn::make('name')->label('Name'),
+                TextColumn::make('symbol')->label('Symbol'),
+                TextColumn::make('rate')->label('Rate per 1 USD')->numeric(decimalPlaces: 4),
+                IconColumn::make('auto_update')->label('Auto update')->boolean(),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('updated_at')->label('Updated')->since(),
             ])
             ->recordActions([EditAction::make()]);
     }

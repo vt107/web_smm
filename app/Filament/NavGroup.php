@@ -5,15 +5,15 @@ namespace App\Filament;
 /** Nhóm menu trang admin (thứ tự khai báo ở AdminPanelProvider). */
 final class NavGroup
 {
-    public const ORDERS = 'Đơn hàng';
+    public const ORDERS = 'Orders';
 
-    public const CATALOG = 'Dịch vụ';
+    public const CATALOG = 'Services';
 
-    public const FINANCE = 'Tài chính';
+    public const FINANCE = 'Finance';
 
-    public const CUSTOMERS = 'Khách hàng';
+    public const CUSTOMERS = 'Customers';
 
-    public const SUPPORT = 'Hỗ trợ';
+    public const SUPPORT = 'Support';
 
-    public const SYSTEM = 'Hệ thống';
+    public const SYSTEM = 'System';
 }

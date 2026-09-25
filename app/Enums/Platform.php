@@ -25,7 +25,7 @@ enum Platform: string implements HasLabel
             self::Telegram => 'Telegram',
             self::Twitter => 'Twitter (X)',
             self::Spotify => 'Spotify',
-            self::Other => 'Khác',
+            self::Other => 'Other',
         };
     }
 }

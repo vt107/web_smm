@@ -12,7 +12,7 @@ class SyncRefillStatuses extends Command
 {
     protected $signature = 'refills:sync';
 
-    protected $description = 'Đồng bộ trạng thái refill đang xử lý từ provider';
+    protected $description = 'Sync processing refill statuses from providers';
 
     public function handle(ProviderManager $providers): int
     {

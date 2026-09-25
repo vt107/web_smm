@@ -30,7 +30,7 @@ class TicketResource extends JsonResource
             'messages' => $this->whenLoaded('messages', fn () => $this->messages->map(fn ($m) => [
                 'id' => $m->id,
                 'is_staff' => $m->is_staff,
-                'author' => $m->is_staff ? 'Hỗ trợ viên' : 'Bạn',
+                'author' => $m->is_staff ? 'Support' : 'You',
                 'message' => $m->message,
                 'attachments' => array_map(fn ($p) => Storage::disk('public')->url($p), $m->attachments ?? []),
                 'created_at' => $this->time($request, $m->created_at),

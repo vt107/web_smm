@@ -15,10 +15,10 @@ enum DepositStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Pending => 'Chờ thanh toán',
-            self::Completed => 'Hoàn thành',
-            self::Expired => 'Hết hạn',
-            self::Canceled => 'Đã huỷ',
+            self::Pending => 'Awaiting payment',
+            self::Completed => 'Completed',
+            self::Expired => 'Expired',
+            self::Canceled => 'Canceled',
         };
     }
 

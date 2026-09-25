@@ -28,19 +28,19 @@ class CategoryResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = NavGroup::CATALOG;
 
-    protected static ?string $modelLabel = 'danh mục';
+    protected static ?string $modelLabel = 'category';
 
-    protected static ?string $pluralModelLabel = 'Danh mục';
+    protected static ?string $pluralModelLabel = 'Categories';
 
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {
         return $schema->columns(2)->components([
-            Select::make('platform')->label('Nền tảng')->options(Platform::class)->required(),
-            TextInput::make('name')->label('Tên danh mục')->required()->maxLength(191),
-            TextInput::make('sort')->label('Thứ tự')->numeric()->default(0),
-            Select::make('status')->label('Trạng thái')->options(ActiveStatus::class)->required()->default(ActiveStatus::Active),
+            Select::make('platform')->label('Platform')->options(Platform::class)->required(),
+            TextInput::make('name')->label('Category name')->required()->maxLength(191),
+            TextInput::make('sort')->label('Sort order')->numeric()->default(0),
+            Select::make('status')->label('Status')->options(ActiveStatus::class)->required()->default(ActiveStatus::Active),
         ]);
     }
 
@@ -50,14 +50,14 @@ class CategoryResource extends Resource
             ->defaultSort('sort')
             ->reorderable('sort')
             ->columns([
-                TextColumn::make('platform')->label('Nền tảng')->badge(),
-                TextColumn::make('name')->label('Tên danh mục')->searchable(),
-                TextColumn::make('services_count')->label('Số dịch vụ')->counts('services'),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
+                TextColumn::make('platform')->label('Platform')->badge(),
+                TextColumn::make('name')->label('Category name')->searchable(),
+                TextColumn::make('services_count')->label('Services')->counts('services'),
+                TextColumn::make('status')->label('Status')->badge(),
             ])
             ->filters([
-                SelectFilter::make('platform')->label('Nền tảng')->options(Platform::class),
-                SelectFilter::make('status')->label('Trạng thái')->options(ActiveStatus::class),
+                SelectFilter::make('platform')->label('Platform')->options(Platform::class),
+                SelectFilter::make('status')->label('Status')->options(ActiveStatus::class),
             ])
             ->recordActions([
                 EditAction::make(),

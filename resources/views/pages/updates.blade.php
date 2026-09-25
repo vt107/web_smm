@@ -1,8 +1,8 @@
-<x-layouts.app title="Cập nhật dịch vụ">
+<x-layouts.app title="Service updates">
     <div x-data="updatesPage()" x-init="load()" class="card">
         <div class="overflow-x-auto">
             <table class="tbl">
-                <thead><tr><th>Thời gian</th><th>Dịch vụ</th><th>Thay đổi</th><th>Chi tiết</th></tr></thead>
+                <thead><tr><th>Time</th><th>Service</th><th>Change</th><th>Details</th></tr></thead>
                 <tbody>
                     <template x-for="u in items" :key="u.id">
                         <tr>
@@ -15,7 +15,7 @@
                             </td>
                         </tr>
                     </template>
-                    <tr x-show="loaded && items.length === 0"><td colspan="4" class="py-10 text-center text-slate-500">Chưa có cập nhật.</td></tr>
+                    <tr x-show="loaded && items.length === 0"><td colspan="4" class="py-10 text-center text-slate-500">No updates yet.</td></tr>
                 </tbody>
             </table>
         </div>

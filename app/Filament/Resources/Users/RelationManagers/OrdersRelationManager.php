@@ -15,7 +15,7 @@ class OrdersRelationManager extends RelationManager
 {
     protected static string $relationship = 'orders';
 
-    protected static ?string $title = 'Đơn hàng';
+    protected static ?string $title = 'Orders';
 
     public function isReadOnly(): bool
     {
@@ -29,14 +29,14 @@ class OrdersRelationManager extends RelationManager
             ->recordUrl(fn (Order $record) => OrderResource::getUrl('view', ['record' => $record]))
             ->columns([
                 TextColumn::make('id')->label('ID'),
-                TextColumn::make('service.name')->label('Dịch vụ')->limit(40),
-                TextColumn::make('quantity')->label('Số lượng')->numeric(),
-                TextColumn::make('charge')->label('Tiền')->formatStateUsing(fn ($state) => Fmt::usd($state)),
-                TextColumn::make('status')->label('Trạng thái')->badge(),
-                TextColumn::make('created_at')->label('Ngày đặt')->dateTime('d/m/Y H:i'),
+                TextColumn::make('service.name')->label('Services')->limit(40),
+                TextColumn::make('quantity')->label('Quantity')->numeric(),
+                TextColumn::make('charge')->label('Charge')->formatStateUsing(fn ($state) => Fmt::usd($state)),
+                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('created_at')->label('Created')->dateTime('d/m/Y H:i'),
             ])
             ->filters([
-                SelectFilter::make('status')->label('Trạng thái')->options(OrderStatus::class),
+                SelectFilter::make('status')->label('Status')->options(OrderStatus::class),
             ]);
     }
 }

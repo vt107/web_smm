@@ -13,9 +13,9 @@ use Illuminate\Console\Command;
 
 class SyncOrderStatuses extends Command
 {
-    protected $signature = 'orders:sync {--limit=2000 : Số đơn tối đa mỗi provider mỗi lần chạy}';
+    protected $signature = 'orders:sync {--limit=2000 : Max orders per provider per run}';
 
-    protected $description = 'Đồng bộ trạng thái đơn đang chạy từ provider, hoàn tiền đơn partial/canceled';
+    protected $description = 'Sync active order statuses from providers and refund partial/canceled orders';
 
     public function handle(ProviderManager $providers, OrderService $orders): int
     {

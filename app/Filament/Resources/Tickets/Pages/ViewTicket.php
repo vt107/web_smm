@@ -20,16 +20,16 @@ class ViewTicket extends ViewRecord
     {
         return [
             Action::make('reply')
-                ->label('Trả lời')
+                ->label('Reply')
                 ->icon(Heroicon::OutlinedChatBubbleLeftRight)
-                ->schema([Textarea::make('message')->label('Nội dung')->rows(6)->required()->maxLength(5000)])
+                ->schema([Textarea::make('message')->label('Description')->rows(6)->required()->maxLength(5000)])
                 ->action(function (Ticket $record, array $data) {
                     app(TicketService::class)->reply($record, auth()->user(), $data['message'], true);
-                    Notification::make()->success()->title('Đã gửi trả lời')->send();
+                    Notification::make()->success()->title('Reply sent')->send();
                     $this->refreshFormData(['status']);
                 }),
             Action::make('close')
-                ->label('Đóng ticket')
+                ->label('Close ticket')
                 ->icon(Heroicon::OutlinedLockClosed)
                 ->color('gray')
                 ->requiresConfirmation()
