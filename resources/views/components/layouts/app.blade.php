@@ -13,14 +13,14 @@
         ['account', 'Account', 'user'],
     ];
 @endphp
-<x-layouts.base :title="$title ?? null">
+<x-layouts.base :title="$title ?? null" noindex>
     <div x-data="{ sidebar: false }" class="min-h-screen lg:pl-64">
         {{-- Sidebar --}}
         <div x-show="sidebar" x-cloak @click="sidebar = false" class="fixed inset-0 z-30 bg-gray-900/60 lg:hidden"></div>
         <aside :class="sidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
                class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-surface transition-transform">
-            <a href="{{ route('dashboard') }}" class="notranslate flex h-16 items-center gap-2 border-b border-slate-200 px-6 text-lg font-bold text-indigo-600" translate="no">
-                {{ config('app.name') }}
+            <a href="{{ route('home') }}" class="flex h-16 items-center border-b border-slate-200 px-6 text-lg text-slate-900">
+                <x-logo />
             </a>
             <nav class="flex-1 space-y-1 overflow-y-auto p-3">
                 @foreach ($nav as [$route, $label, $icon])

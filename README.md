@@ -15,7 +15,8 @@ docker compose exec app php artisan storage:link  # ảnh đính kèm ticket
 npm install && npm run build                      # CSS/JS giao diện khách (dev: npm run dev)
 ```
 
-- Web khách: http://localhost:8088 (đăng ký / đăng nhập bằng email hoặc username)
+- Landing page (công khai): http://localhost:8088 — bảng giá công khai: `/pricing`
+- Web khách: http://localhost:8088/dashboard (đăng ký / đăng nhập bằng email hoặc username)
 - Trang admin (Filament): http://localhost:8088/admin — chỉ tài khoản `role = admin`
 
 Seeder tạo cấp bậc, tiền tệ (USD/VND/THB), 3 kênh nạp (SePay, USDT TRC20, USDT BEP20) và tài khoản admin
@@ -30,6 +31,17 @@ docker compose exec app php artisan db:seed --class=DemoCatalogSeeder
 
 Dịch vụ mẫu ở chế độ *làm tay*: đơn đặt xong nằm ở "Chờ xử lý", vào `/admin/orders` → *Cập nhật trạng thái*
 để giả lập đơn chạy / hoàn thành / partial (hoàn tiền tự động).
+
+Provider giả lập để test luồng gửi đơn tự động (queue → provider → đồng bộ → hoàn tiền / refill), không tốn tiền thật:
+
+```bash
+docker compose exec app php artisan db:seed --class=SandboxProviderSeeder   # cần SANDBOX_PROVIDER_ENABLED=true
+```
+
+Tạo provider "Sandbox Provider" + 6 dịch vụ trong danh mục "Sandbox (test provider)", mỗi dịch vụ một kịch bản:
+hoàn thành / partial 70% / provider huỷ / provider từ chối đơn / custom comments / package.
+Trạng thái tự tiến mỗi `SANDBOX_STAGE_MINUTES` phút; scheduler đồng bộ 5 phút/lần (hoặc chạy tay `php artisan orders:sync`).
+**Khi bàn giao / chạy thật:** đặt `SANDBOX_PROVIDER_ENABLED=false` và tắt provider + dịch vụ sandbox trong admin.
 
 Chạy test (dùng database `smm_testing`):
 
@@ -57,6 +69,14 @@ docker compose exec app php artisan test
 dữ liệu lấy qua JSON nội bộ `/ajax/*` (session + CSRF, `app/Http/Controllers/Web/Ajax/`).
 Hàm dùng chung ở `resources/js/app.js`: `api.get/post/put`, `toast()`, `formatMoney()`, `$store.me` (số dư ở header).
 Lỗi nghiệp vụ trả 422 kèm thông báo tiếng Việt (`lang/vi.json`); API khách (`/api/v2`) vẫn trả tiếng Anh.
+
+**Cấu hình website (cho người không rành kỹ thuật)** – admin → *System → Website settings*: tên web, khẩu hiệu,
+logo, favicon, tiêu đề/mô tả SEO, ảnh chia sẻ mạng xã hội, bật/tắt cho Google index, Google Analytics ID,
+tiêu đề + mô tả landing page, danh sách FAQ, email/Telegram/WhatsApp, chữ cuối trang.
+Lưu trong bảng `settings` (key `site.*`), đọc qua `App\Support\Site`, mặc định ở `config/smm.php → site`.
+
+**SEO** – landing `/` và `/pricing` render phía server; title, meta description, canonical, Open Graph/Twitter card,
+JSON-LD (Organization, WebSite, FAQPage), `/robots.txt`, `/sitemap.xml`; các trang sau đăng nhập gắn `noindex`.
 
 **Trang admin** – Filament v5 (`app/Filament/`): đơn hàng (cập nhật trạng thái, gửi lại, huỷ/hoàn tiền), refill,
 dịch vụ, danh mục, provider (đồng bộ / import), phiếu nạp, giao dịch tiền vào (gán cho khách), kênh nạp,

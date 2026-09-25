@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Public\LandingController;
+use App\Http\Controllers\Public\PricingController;
+use App\Http\Controllers\Public\SeoController;
 use App\Http\Controllers\Web\Ajax\AccountController;
 use App\Http\Controllers\Web\Ajax\CatalogController;
 use App\Http\Controllers\Web\Ajax\DepositController;
@@ -9,7 +12,11 @@ use App\Http\Controllers\Web\Ajax\TransactionController;
 use App\Http\Controllers\Web\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+// Trang công khai (không cần đăng nhập).
+Route::get('/', LandingController::class)->name('home');
+Route::get('/pricing', PricingController::class)->name('pricing');
+Route::get('/robots.txt', [SeoController::class, 'robots']);
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

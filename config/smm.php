@@ -58,6 +58,34 @@ return [
         'api_url' => 'https://open.er-api.com/v6/latest/USD',
     ],
 
+    // Cấu hình website mặc định – admin sửa ở trang "Website settings" (lưu vào bảng settings, key "site.*").
+    'site' => [
+        'name' => env('APP_NAME', 'SMM Panel'),
+        'tagline' => 'Cheapest & fastest SMM panel',
+        'description' => 'Buy followers, likes, views and more for Instagram, TikTok, YouTube, Facebook, Telegram and X. Instant start, automatic refunds, refill guarantee and a reseller API.',
+        'logo' => null,
+        'show_name' => true,
+        'favicon' => null,
+        'seo_title' => null,
+        'og_image' => null,
+        'allow_indexing' => true,
+        'google_analytics_id' => null,
+        'hero_title' => 'The fastest & most affordable SMM panel',
+        'hero_subtitle' => 'Grow your social media with high-quality followers, likes and views. Orders start within minutes, failed orders are refunded automatically, and our API lets you resell every service.',
+        'faq' => [
+            ['question' => 'What is an SMM panel?', 'answer' => 'An SMM (social media marketing) panel is an online shop where you can buy social media services such as followers, likes, views and comments for Instagram, TikTok, YouTube, Facebook and more.'],
+            ['question' => 'How fast will my order start?', 'answer' => 'Most orders start within a few minutes. The start time and average completion time are shown on every service before you order.'],
+            ['question' => 'What happens if an order is not fully delivered?', 'answer' => 'If an order is canceled or only partially delivered, the undelivered part is refunded to your balance automatically.'],
+            ['question' => 'Do you offer refills?', 'answer' => 'Services marked with a refill guarantee can be refilled for free from your orders page if the count drops during the guarantee period.'],
+            ['question' => 'Which payment methods do you accept?', 'answer' => 'You can add funds by bank transfer (VietQR) or with USDT on TRON (TRC20) and BNB Smart Chain (BEP20). Crypto deposits receive a bonus.'],
+            ['question' => 'Can I resell your services?', 'answer' => 'Yes. Generate an API key on your account page and connect it to your own panel – our API follows the standard PerfectPanel format.'],
+        ],
+        'support_email' => null,
+        'telegram_url' => null,
+        'whatsapp_url' => null,
+        'footer_text' => null,
+    ],
+
     // Giá trị mặc định cho bảng `settings` (admin chỉnh được lúc chạy).
     'settings' => [
         'order_max_send_attempts' => 5,

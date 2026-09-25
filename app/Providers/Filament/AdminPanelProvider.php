@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\NavGroup;
+use App\Support\Site;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -27,7 +28,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName(config('app.name').' Admin')
+            ->brandName(fn () => Site::name())
+            ->brandLogo(fn () => view('filament.brand'))
+            ->brandLogoHeight('2rem')
+            ->favicon(fn () => Site::faviconUrl())
             ->colors([
                 'primary' => Color::Indigo,
             ])
