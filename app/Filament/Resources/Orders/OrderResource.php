@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Orders;
 use App\Enums\OrderSource;
 use App\Enums\OrderStatus;
 use App\Exceptions\SmmException;
+use App\Filament\Access;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
@@ -36,6 +38,14 @@ use UnitEnum;
 
 class OrderResource extends Resource
 {
+    use StaffPermissions;
+
+    /** Nhân viên Support được xem (không sửa). */
+    protected static function supportAbilities(): array
+    {
+        return ['viewAny', 'view'];
+    }
+
     protected static ?string $model = Order::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
@@ -100,7 +110,7 @@ class OrderResource extends Resource
             Action::make('updateStatus')
                 ->label('Update status')
                 ->icon(Heroicon::OutlinedPencilSquare)
-                ->visible(fn (Order $record) => ! $record->status->isFinal())
+                ->visible(fn (Order $record) => Access::isAdmin() && ! $record->status->isFinal())
                 ->fillForm(fn (Order $record) => [
                     'status' => $record->status,
                     'start_count' => $record->start_count,
@@ -138,7 +148,7 @@ class OrderResource extends Resource
                 ->label('Cancel & refund')
                 ->icon(Heroicon::OutlinedXCircle)
                 ->color('danger')
-                ->visible(fn (Order $record) => ! $record->status->isFinal())
+                ->visible(fn (Order $record) => Access::isAdmin() && ! $record->status->isFinal())
                 ->requiresConfirmation()
                 ->modalDescription('The order becomes Canceled and the unrefunded amount is returned. If it was sent to a provider, make sure the provider has canceled it.')
                 ->action(function (Order $record) {
@@ -149,7 +159,7 @@ class OrderResource extends Resource
                 ->label('Full refund')
                 ->icon(Heroicon::OutlinedReceiptRefund)
                 ->color('danger')
-                ->visible(fn (Order $record) => $record->status->isFinal() && $record->status !== OrderStatus::Refunded)
+                ->visible(fn (Order $record) => Access::isAdmin() && $record->status->isFinal() && $record->status !== OrderStatus::Refunded)
                 ->requiresConfirmation()
                 ->modalDescription('Refund the remaining amount of this finished order and mark it as Refunded.')
                 ->action(function (Order $record) {

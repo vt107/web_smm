@@ -3,6 +3,8 @@
 namespace App\Services\Payments\Crypto;
 
 use App\Models\PaymentMethod;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -20,19 +22,12 @@ class EvmScanner implements CryptoScanner
         $minConfirmations = (int) $method->configValue('min_confirmations', 15);
         $startBlock = $cursor ?? (string) $method->configValue('start_block', 0);
 
-        $response = Http::timeout(20)->get(config('smm.crypto.evm.api_url'), [
-            'chainid' => $method->configValue('chain_id', 56),
-            'module' => 'account',
-            'action' => 'tokentx',
-            'contractaddress' => $method->configValue('token_contract'),
-            'address' => $address,
-            'startblock' => $startBlock,
-            'endblock' => 99999999,
-            'page' => 1,
-            'offset' => 200,
-            'sort' => 'asc',
-            'apikey' => $method->configValue('api_key'),
-        ]);
+        try {
+            $response = $this->requestTokenTransfers($method, $address, $startBlock);
+        } catch (ConnectionException) {
+            // URL chứa apikey → không đưa thông báo gốc vào log.
+            throw new RuntimeException('Could not connect to the block explorer');
+        }
 
         $result = $response->json('result');
 
@@ -72,5 +67,22 @@ class EvmScanner implements CryptoScanner
         }
 
         return ['transfers' => $transfers, 'cursor' => $lastBlock];
+    }
+
+    private function requestTokenTransfers(PaymentMethod $method, string $address, ?string $startBlock): Response
+    {
+        return Http::timeout(20)->get(config('smm.crypto.evm.api_url'), [
+            'chainid' => $method->configValue('chain_id', 56),
+            'module' => 'account',
+            'action' => 'tokentx',
+            'contractaddress' => $method->configValue('token_contract'),
+            'address' => $address,
+            'startblock' => $startBlock,
+            'endblock' => 99999999,
+            'page' => 1,
+            'offset' => 200,
+            'sort' => 'asc',
+            'apikey' => $method->configValue('api_key'),
+        ]);
     }
 }

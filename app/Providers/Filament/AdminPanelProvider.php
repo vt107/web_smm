@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\NavGroup;
+use App\Services\TwoFactorService;
 use App\Support\Site;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
@@ -33,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
             // Trang Profile: đổi mật khẩu + bật bảo mật 2 lớp (không bắt buộc).
             ->profile(isSimple: false)
             ->multiFactorAuthentication([
-                AppAuthentication::make()->recoverable(),
+                AppAuthentication::make()->recoverable()->codeWindow(TwoFactorService::CODE_WINDOW),
                 EmailAuthentication::make(),
             ])
             ->brandName(fn () => Site::name())

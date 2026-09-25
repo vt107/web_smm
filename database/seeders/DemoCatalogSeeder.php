@@ -28,6 +28,12 @@ class DemoCatalogSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->isProduction()) {
+            $this->command?->error('DemoCatalogSeeder chỉ dùng để test – không chạy trên production.');
+
+            return;
+        }
+
         $count = 0;
 
         foreach ($this->catalog() as $sort => [$platform, $categoryName, $services]) {

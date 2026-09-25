@@ -8,8 +8,9 @@ return [
         'password' => env('ADMIN_PASSWORD'),
     ],
 
-    // Proxy được tin tưởng (Cloudflare / load balancer) để lấy đúng IP khách và HTTPS.
-    // "*" = tin mọi proxy – chỉ dùng khi firewall chỉ cho Cloudflare truy cập port 80.
+    // Proxy được tin tưởng để đọc X-Forwarded-For / -Proto. Để TRỐNG khi nginx đã lấy IP thật từ Cloudflare
+    // (real_ip_header CF-Connecting-IP) – bật cả hai sẽ cho phép khách tự khai IP. Chỉ dùng khi đứng sau
+    // load balancer không có real_ip, và khi đó ghi đúng IP của load balancer (không dùng "*").
     'trusted_proxies' => env('TRUSTED_PROXIES'),
 
     'api' => [
@@ -51,7 +52,7 @@ return [
     // TẮT ở production.
     'sandbox' => [
         'enabled' => (bool) env('SANDBOX_PROVIDER_ENABLED', false),
-        'key' => env('SANDBOX_PROVIDER_KEY', 'sandbox-secret'),
+        'key' => env('SANDBOX_PROVIDER_KEY'),
         // URL mà queue worker gọi tới (trong Docker: tên service "app").
         'url' => env('SANDBOX_PROVIDER_URL', 'http://app:8000/api/sandbox-provider/v2'),
         // Độ dài mỗi giai đoạn trạng thái đơn (phút).

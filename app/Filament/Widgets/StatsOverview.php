@@ -6,6 +6,7 @@ use App\Enums\DepositStatus;
 use App\Enums\OrderStatus;
 use App\Enums\TicketStatus;
 use App\Enums\TransferStatus;
+use App\Filament\Access;
 use App\Filament\Support\Fmt;
 use App\Models\Deposit;
 use App\Models\IncomingTransfer;
@@ -22,6 +23,12 @@ class StatsOverview extends StatsOverviewWidget
     protected ?string $pollingInterval = '60s';
 
     protected static ?int $sort = 1;
+
+    /** Doanh thu / số dư: chỉ admin. */
+    public static function canView(): bool
+    {
+        return Access::isAdmin();
+    }
 
     protected function getStats(): array
     {

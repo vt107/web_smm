@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Deposits;
 
 use App\Enums\DepositMatchedBy;
 use App\Enums\DepositStatus;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Deposits\Pages\ManageDeposits;
 use App\Filament\Support\Fmt;
@@ -21,6 +22,8 @@ use UnitEnum;
 
 class DepositResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = Deposit::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWallet;
@@ -65,7 +68,10 @@ class DepositResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->visible(fn (Deposit $r) => in_array($r->status, [DepositStatus::Pending, DepositStatus::Expired], true))
-                    ->action(fn (Deposit $r) => $r->update(['status' => DepositStatus::Canceled])),
+                    // Chỉ huỷ khi vẫn chưa thanh toán (tránh ghi đè phiếu vừa được webhook cộng tiền).
+                    ->action(fn (Deposit $r) => Deposit::query()->whereKey($r->id)
+                        ->whereIn('status', [DepositStatus::Pending, DepositStatus::Expired])
+                        ->update(['status' => DepositStatus::Canceled])),
             ]);
     }
 

@@ -97,16 +97,29 @@ class CryptoDepositTest extends TestCase
         $this->assertSame(DepositStatus::Pending, $deposit->fresh()->status);
     }
 
-    public function test_transfer_reduced_by_exchange_fee_can_be_claimed(): void
+    public function test_crypto_claim_waits_for_admin_approval(): void
     {
         $this->createDeposit('10');
         $this->fakeTronGrid([['hash' => 'tx-fee', 'amount' => '9.5']]);
 
         $this->artisan('deposits:scan');
-        $this->assertSame(TransferStatus::Unmatched, IncomingTransfer::query()->sole()->status);
+        $transfer = IncomingTransfer::query()->sole();
+        $this->assertSame(TransferStatus::Unmatched, $transfer->status);
 
-        app(DepositService::class)->claim($this->user, $this->method, 'tx-fee');
+        // Tx hash công khai → khách chỉ gửi yêu cầu, chưa được cộng tiền.
+        app(DepositService::class)->requestCryptoClaim($this->user, $this->method, 'tx-fee');
+        $this->assertSame($this->user->id, $transfer->fresh()->claimed_by);
+        $this->assertSame('0.000000', $this->user->fresh()->balance);
 
-        $this->assertSame('9.975000', $this->user->fresh()->balance); // 9.5 + 5%
+        // Người khác không xin nhận chồng được.
+        $other = User::factory()->create();
+        app(DepositService::class)->create($other, $this->method, '10');
+        $this->expectExceptionMessage('This transaction is already under review');
+        try {
+            app(DepositService::class)->requestCryptoClaim($other, $this->method, 'tx-fee');
+        } finally {
+            app(DepositService::class)->approveClaim($transfer->fresh());
+            $this->assertSame('9.975000', $this->user->fresh()->balance); // 9.5 + 5% sau khi admin duyệt
+        }
     }
 }

@@ -10,6 +10,7 @@ use App\Models\Level;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -71,6 +72,8 @@ class AccountController extends Controller
         ]);
 
         $request->user()->update(['password' => $data['password']]);
+        // Giữ phiên hiện tại, đăng xuất mọi thiết bị khác (middleware auth.session so khớp hash mật khẩu).
+        Auth::logoutOtherDevices($data['password']);
 
         return response()->json(['message' => 'Password changed']);
     }

@@ -26,21 +26,21 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1,login');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1,register');
 
     Route::get('/forgot-password', [PasswordResetController::class, 'showRequest'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1,forgot-password')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showReset'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1')->name('password.update');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1,reset-password')->name('password.update');
 
     Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
-    Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'verify'])->middleware('throttle:10,1')->name('two-factor.verify');
-    Route::post('/two-factor-challenge/email', [TwoFactorChallengeController::class, 'sendEmailCode'])->middleware('throttle:5,1')->name('two-factor.email');
+    Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'verify'])->middleware('throttle:10,1,two-factor-challenge')->name('two-factor.verify');
+    Route::post('/two-factor-challenge/email', [TwoFactorChallengeController::class, 'sendEmailCode'])->middleware('throttle:5,1,two-factor-challenge-email')->name('two-factor.email');
 });
 
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'auth.session', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Trang: khung Blade, dữ liệu lấy qua /ajax bằng Alpine.js.
@@ -62,10 +62,10 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('/dashboard', [AccountController::class, 'dashboard']);
         Route::get('/currencies', [AccountController::class, 'currencies']);
         Route::put('/account', [AccountController::class, 'update']);
-        Route::put('/account/password', [AccountController::class, 'password']);
-        Route::post('/account/api-key', [AccountController::class, 'apiKey'])->middleware('throttle:5,1');
+        Route::put('/account/password', [AccountController::class, 'password'])->middleware('throttle:5,1,account-password');
+        Route::post('/account/api-key', [AccountController::class, 'apiKey'])->middleware('throttle:5,1,account-api-key');
 
-        Route::prefix('two-factor')->middleware('throttle:20,1')->controller(TwoFactorController::class)->group(function () {
+        Route::prefix('two-factor')->middleware('throttle:20,1,two-factor')->controller(TwoFactorController::class)->group(function () {
             Route::get('/', 'status');
             Route::post('/app/setup', 'setupApp');
             Route::post('/app/enable', 'enableApp');
@@ -76,27 +76,30 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/email/disable', 'disableEmail');
         });
 
-        Route::get('/services', [CatalogController::class, 'services']);
+        Route::get('/catalog', [CatalogController::class, 'index']);
+        Route::get('/catalog/categories/{category}', [CatalogController::class, 'category'])->whereNumber('category');
+        Route::get('/catalog/search', [CatalogController::class, 'search'])->middleware('throttle:60,1,catalog-search');
+        Route::get('/catalog/services/{service}', [CatalogController::class, 'service'])->whereNumber('service');
         Route::get('/updates', [CatalogController::class, 'updates']);
 
         Route::get('/orders', [OrderController::class, 'index']);
-        Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:60,1');
-        Route::post('/orders/mass', [OrderController::class, 'mass'])->middleware('throttle:10,1');
-        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
-        Route::post('/orders/{order}/refill', [OrderController::class, 'refill']);
+        Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:60,1,orders');
+        Route::post('/orders/mass', [OrderController::class, 'mass'])->middleware('throttle:10,1,orders-mass');
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('throttle:20,1,orders-order-cancel');
+        Route::post('/orders/{order}/refill', [OrderController::class, 'refill'])->middleware('throttle:20,1,orders-order-refill');
 
         Route::get('/payment-methods', [DepositController::class, 'methods']);
         Route::get('/deposits', [DepositController::class, 'index']);
-        Route::post('/deposits', [DepositController::class, 'store'])->middleware('throttle:20,1');
+        Route::post('/deposits', [DepositController::class, 'store'])->middleware('throttle:20,1,deposits');
         Route::get('/deposits/{deposit}', [DepositController::class, 'show']);
-        Route::post('/deposits/claim', [DepositController::class, 'claim'])->middleware('throttle:10,1');
+        Route::post('/deposits/claim', [DepositController::class, 'claim'])->middleware('throttle:10,1,deposits-claim');
 
         Route::get('/transactions', [TransactionController::class, 'index']);
 
         Route::get('/tickets', [TicketController::class, 'index']);
-        Route::post('/tickets', [TicketController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/tickets', [TicketController::class, 'store'])->middleware('throttle:10,1,tickets');
         Route::get('/tickets/{ticket}', [TicketController::class, 'show']);
-        Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->middleware('throttle:20,1');
+        Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->middleware('throttle:20,1,tickets-ticket-reply');
         Route::post('/tickets/{ticket}/close', [TicketController::class, 'close']);
     });
 });

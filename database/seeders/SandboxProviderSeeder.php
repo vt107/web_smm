@@ -21,6 +21,12 @@ class SandboxProviderSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction()) {
+            $this->command?->error('SandboxProviderSeeder chỉ dùng để test – không chạy trên production.');
+
+            return;
+        }
+
         $provider = Provider::query()->updateOrCreate(['name' => 'Sandbox Provider'], [
             'api_url' => config('smm.sandbox.url'),
             'api_key' => config('smm.sandbox.key'),

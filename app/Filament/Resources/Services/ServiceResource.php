@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Services;
 use App\Enums\ActiveStatus;
 use App\Enums\Fulfillment;
 use App\Enums\ServiceType;
+use App\Filament\Access;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Services\Pages\CreateService;
 use App\Filament\Resources\Services\Pages\EditService;
@@ -38,6 +40,14 @@ use UnitEnum;
 
 class ServiceResource extends Resource
 {
+    use StaffPermissions;
+
+    /** Nhân viên Support được xem (không sửa). */
+    protected static function supportAbilities(): array
+    {
+        return ['viewAny'];
+    }
+
     protected static ?string $model = Service::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
@@ -135,7 +145,7 @@ class ServiceResource extends Resource
                         }),
                     DeleteBulkAction::make(),
                     RestoreBulkAction::make(),
-                ]),
+                ])->visible(fn () => Access::isAdmin()),
             ]);
     }
 

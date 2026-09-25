@@ -185,18 +185,22 @@ class OrderService
             throw new SmmException('Refill period has expired');
         }
 
-        $hasActive = $order->refills()
-            ->whereIn('status', [RefillStatus::Pending, RefillStatus::Processing])
-            ->exists();
+        $refill = DB::transaction(function () use ($order) {
+            Order::query()->whereKey($order->id)->lockForUpdate()->first();
 
-        if ($hasActive) {
-            throw new SmmException('Refill is already in progress');
-        }
+            $hasActive = $order->refills()
+                ->whereIn('status', [RefillStatus::Pending, RefillStatus::Processing])
+                ->exists();
 
-        $refill = $order->refills()->create([
-            'user_id' => $order->user_id,
-            'status' => RefillStatus::Pending,
-        ]);
+            if ($hasActive) {
+                throw new SmmException('Refill is already in progress');
+            }
+
+            return $order->refills()->create([
+                'user_id' => $order->user_id,
+                'status' => RefillStatus::Pending,
+            ]);
+        });
 
         if (! $service->isManual()) {
             SendRefillToProvider::dispatch($refill->id)->afterCommit();
@@ -365,7 +369,8 @@ class OrderService
         $type = $service->type;
 
         $rules = [
-            'link' => ['required', 'string', 'max:1000'],
+            // http(s) URL hoặc giá trị không có scheme (vd @username) – chặn javascript:/data: … (XSS khi hiển thị).
+            'link' => ['required', 'string', 'max:1000', 'regex:/^(https?:\/\/\S+|[^\s:]+)$/i'],
             'runs' => ['nullable', 'integer', 'min:2', 'required_with:interval'],
             'interval' => ['nullable', 'integer', 'min:1', 'required_with:runs'],
         ] + $type->extraRules();

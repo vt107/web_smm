@@ -6,6 +6,8 @@ use App\Enums\TransactionType;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\InsufficientBalanceException;
+use App\Filament\Access;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
@@ -36,6 +38,14 @@ use UnitEnum;
 
 class UserResource extends Resource
 {
+    use StaffPermissions;
+
+    /** Nhân viên Support được xem (không sửa). */
+    protected static function supportAbilities(): array
+    {
+        return ['viewAny'];
+    }
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
@@ -109,7 +119,7 @@ class UserResource extends Resource
             ->label('Reset 2FA')
             ->icon(Heroicon::OutlinedShieldExclamation)
             ->color('danger')
-            ->visible(fn (User $record) => $record->hasTwoFactorEnabled())
+            ->visible(fn (User $record) => Access::isAdmin() && $record->hasTwoFactorEnabled())
             ->requiresConfirmation()
             ->modalDescription('Turns off the authenticator app and email codes for this customer. Only do this after verifying their identity.')
             ->action(function (User $record) {
@@ -122,6 +132,7 @@ class UserResource extends Resource
     {
         return Action::make('adjustBalance')
             ->label('Adjust balance')
+            ->visible(fn () => Access::isAdmin())
             ->icon(Heroicon::OutlinedBanknotes)
             ->schema([
                 Select::make('type')->label('Type')->required()->default(TransactionType::AdminAdd->value)

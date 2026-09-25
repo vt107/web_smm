@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web\Ajax;
 
+use App\Enums\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DepositResource;
 use App\Models\PaymentMethod;
@@ -63,7 +64,18 @@ class DepositController extends Controller
             'txid' => ['required', 'string', 'max:150'],
         ]);
 
-        $method = PaymentMethod::query()->findOrFail($data['payment_method_id']);
+        $method = PaymentMethod::query()->active()->findOrFail($data['payment_method_id']);
+
+        // Crypto: tx hash công khai → chỉ gửi yêu cầu, admin duyệt rồi mới cộng tiền.
+        if ($method->gateway === PaymentGateway::Crypto) {
+            $this->deposits->requestCryptoClaim($request->user(), $method, $data['txid']);
+
+            return response()->json([
+                'message' => 'Your claim was submitted. We will verify the transaction and credit your balance shortly.',
+                'pending' => true,
+            ]);
+        }
+
         $deposit = $this->deposits->claim($request->user(), $method, $data['txid']);
 
         return response()->json([

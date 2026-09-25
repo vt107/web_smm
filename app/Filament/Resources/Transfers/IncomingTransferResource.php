@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Transfers;
 
 use App\Enums\TransferStatus;
 use App\Exceptions\SmmException;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Transfers\Pages\ManageIncomingTransfers;
 use App\Models\IncomingTransfer;
@@ -25,6 +26,8 @@ use UnitEnum;
 
 class IncomingTransferResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = IncomingTransfer::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowDownOnSquareStack;
@@ -43,7 +46,7 @@ class IncomingTransferResource extends Resource
     {
         return $table
             ->defaultSort('transferred_at', 'desc')
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['paymentMethod', 'deposit.user']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['paymentMethod', 'deposit.user', 'claimant']))
             ->columns([
                 TextColumn::make('paymentMethod.name')->label('Method'),
                 TextColumn::make('amount')->label('Amount')
@@ -53,6 +56,8 @@ class IncomingTransferResource extends Resource
                 TextColumn::make('content')->label('Description')->limit(40)->placeholder('—')->searchable()
                     ->description(fn (IncomingTransfer $r) => $r->sender ? str($r->sender)->limit(24) : null),
                 TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('claimant.username')->label('Claimed by')->placeholder('—')->badge()->color('warning')
+                    ->description(fn (IncomingTransfer $r) => $r->claimed_at?->diffForHumans()),
                 TextColumn::make('deposit.code')->label('Deposit')->placeholder('—')
                     ->description(fn (IncomingTransfer $r) => $r->deposit?->user?->username),
                 TextColumn::make('transferred_at')->label('Time')->dateTime('d/m/Y H:i')->sortable(),
@@ -63,6 +68,28 @@ class IncomingTransferResource extends Resource
             ])
             ->recordActions([
                 ActionGroup::make([
+                    Action::make('approveClaim')
+                        ->label('Approve claim')
+                        ->icon(Heroicon::OutlinedCheckBadge)
+                        ->color('success')
+                        ->visible(fn (IncomingTransfer $r) => $r->status === TransferStatus::Unmatched && $r->claimed_by)
+                        ->requiresConfirmation()
+                        ->modalDescription('Only approve after checking the sender on the block explorer matches this customer (e.g. ask for a screenshot of their withdrawal).')
+                        ->action(function (IncomingTransfer $record) {
+                            try {
+                                $deposit = app(DepositService::class)->approveClaim($record);
+                                Notification::make()->success()->title("Credited via deposit {$deposit->code}")->send();
+                            } catch (SmmException $e) {
+                                Notification::make()->danger()->title($e->localized())->send();
+                            }
+                        }),
+                    Action::make('rejectClaim')
+                        ->label('Reject claim')
+                        ->icon(Heroicon::OutlinedXCircle)
+                        ->color('danger')
+                        ->visible(fn (IncomingTransfer $r) => $r->status === TransferStatus::Unmatched && $r->claimed_by)
+                        ->requiresConfirmation()
+                        ->action(fn (IncomingTransfer $record) => app(DepositService::class)->rejectClaim($record)),
                     Action::make('assign')
                         ->label('Assign to customer & credit')
                         ->icon(Heroicon::OutlinedUserPlus)
@@ -97,12 +124,15 @@ class IncomingTransferResource extends Resource
                         ->icon(Heroicon::OutlinedEyeSlash)
                         ->requiresConfirmation()
                         ->visible(fn (IncomingTransfer $r) => $r->status === TransferStatus::Unmatched)
-                        ->action(fn (IncomingTransfer $r) => $r->update(['status' => TransferStatus::Ignored])),
+                        // Chỉ đổi khi vẫn còn "chưa khớp" (tránh ghi đè giao dịch vừa được khớp tự động).
+                        ->action(fn (IncomingTransfer $r) => IncomingTransfer::query()->whereKey($r->id)
+                            ->where('status', TransferStatus::Unmatched)->update(['status' => TransferStatus::Ignored])),
                     Action::make('restore')
                         ->label('Move back to unmatched')
                         ->icon(Heroicon::OutlinedArrowUturnLeft)
                         ->visible(fn (IncomingTransfer $r) => $r->status === TransferStatus::Ignored)
-                        ->action(fn (IncomingTransfer $r) => $r->update(['status' => TransferStatus::Unmatched])),
+                        ->action(fn (IncomingTransfer $r) => IncomingTransfer::query()->whereKey($r->id)
+                            ->where('status', TransferStatus::Ignored)->update(['status' => TransferStatus::Unmatched])),
                 ]),
             ]);
     }

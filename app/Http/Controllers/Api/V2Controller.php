@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\ActiveStatus;
 use App\Enums\OrderSource;
 use App\Exceptions\SmmException;
 use App\Http\Controllers\Controller;
@@ -12,8 +11,8 @@ use App\Models\Order;
 use App\Models\OrderRefill;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\CatalogService;
 use App\Services\OrderService;
-use App\Services\PricingService;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,9 +27,11 @@ class V2Controller extends Controller
     /** Chỉ ghi log các action làm thay đổi dữ liệu (và mọi request lỗi) để bảng log không phình vì polling. */
     private const LOGGED_ACTIONS = ['add', 'refill', 'cancel'];
 
+    private const LOGGED_PARAMS = ['action', 'service', 'link', 'quantity', 'runs', 'interval', 'order', 'orders', 'refill', 'refills'];
+
     public function __construct(
         private readonly OrderService $orders,
-        private readonly PricingService $pricing,
+        private readonly CatalogService $catalog,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -71,7 +72,10 @@ class V2Controller extends Controller
                 'user_id' => $user?->id,
                 'action' => Str::limit($action, 20, ''),
                 'ip' => (string) $request->ip(),
-                'request' => $request->except('key'),
+                // Chỉ lưu các tham số chuẩn, cắt ngắn giá trị (không để request rác làm phình log).
+                'request' => collect($request->only(self::LOGGED_PARAMS))
+                    ->map(fn ($v) => is_scalar($v) ? Str::limit((string) $v, 300) : null)
+                    ->all(),
                 'response_status' => 200,
                 'error' => $error ? Str::limit($error, 250) : null,
             ]);
@@ -82,29 +86,18 @@ class V2Controller extends Controller
 
     private function services(User $user): array
     {
-        return Service::query()
-            ->active()
-            ->join('categories', 'categories.id', '=', 'services.category_id')
-            ->where('categories.status', ActiveStatus::Active)
-            ->with('category')
-            ->orderBy('categories.sort')
-            ->orderBy('services.sort')
-            ->orderBy('services.id')
-            ->select('services.*')
-            ->get()
-            ->map(fn (Service $s) => [
-                'service' => $s->id,
-                'name' => $s->name,
-                'type' => $s->type->label(),
-                'category' => $s->category->name,
-                'rate' => Money::format($this->pricing->rateFor($s, $user)),
-                'min' => $s->min,
-                'max' => $s->max,
-                'refill' => $s->refill,
-                'cancel' => $s->cancel,
-                'dripfeed' => $s->dripfeed,
-            ])
-            ->all();
+        return array_map(fn (array $s) => [
+            'service' => $s['id'],
+            'name' => $s['name'],
+            'type' => $s['type_label'],
+            'category' => $s['category_name'],
+            'rate' => $s['rate_usd'],
+            'min' => $s['min'],
+            'max' => $s['max'],
+            'refill' => $s['refill'],
+            'cancel' => $s['cancel'],
+            'dripfeed' => $s['dripfeed'],
+        ], $this->catalog->allServices($user));
     }
 
     private function add(User $user, Request $request): array

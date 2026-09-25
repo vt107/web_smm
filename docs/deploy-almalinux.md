@@ -76,7 +76,11 @@ Composer:
 
 ```bash
 php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');"
-php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+# Kiểm tra chữ ký trước khi chạy (mã hash công bố tại https://composer.github.io/installer.sig)
+EXPECTED=$(curl -fsSL https://composer.github.io/installer.sig)
+ACTUAL=$(php -r "echo hash_file('sha384', '/tmp/composer-setup.php');")
+[ "$EXPECTED" = "$ACTUAL" ] && php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer || echo "SAI CHỮ KÝ – dừng lại"
+rm -f /tmp/composer-setup.php
 composer --version
 ```
 
@@ -89,7 +93,9 @@ dnf install -y nodejs
 node -v                           # v22.x
 ```
 
-> Nếu kho chưa có `nodejs:22`: `curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && dnf install -y nodejs`.
+> Nếu kho chưa có `nodejs:22`: cài từ kho NodeSource theo hướng dẫn chính thức tại https://github.com/nodesource/distributions
+> (tải script về, đọc qua rồi mới chạy – không chạy thẳng `curl … | bash`).
+> Hoặc build CSS/JS trên máy khác rồi chỉ upload thư mục `public/build` lên server.
 
 ## 4. Cài MySQL 8 và tạo database
 
@@ -145,6 +151,7 @@ chown -R smm:nginx /var/www/smm
 ```bash
 cd /var/www/smm
 sudo -u smm cp .env.example .env
+chmod 640 .env            # chứa APP_KEY + mật khẩu DB: chỉ user smm (và nhóm nginx) đọc được
 sudo -u smm nano .env
 ```
 
@@ -171,8 +178,9 @@ SESSION_SECURE_COOKIE=true
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=MatKhauAdminManh!
 
-# Chạy sau Cloudflare, firewall chỉ cho Cloudflare vào port 80 (bước 10)
-TRUSTED_PROXIES=*
+# ĐỂ TRỐNG: nginx đã lấy IP thật của khách từ Cloudflare (bước 9).
+# Đặt "*" ở đây sẽ cho phép khách tự khai IP qua header X-Forwarded-For → vô hiệu giới hạn đăng nhập.
+TRUSTED_PROXIES=
 
 # Provider giả lập chỉ dùng để test – luôn TẮT khi chạy thật
 SANDBOX_PROVIDER_ENABLED=false
@@ -224,7 +232,8 @@ chmod 755 /var/www
 
 ## 9. Cấu hình nginx
 
-Lấy IP thật của khách từ Cloudflare (danh sách IP của Cloudflare):
+Lấy IP thật của khách từ Cloudflare (danh sách IP của Cloudflare). Đây là **cách duy nhất** app lấy IP khách –
+vì vậy `TRUSTED_PROXIES` trong `.env` phải để trống:
 
 ```bash
 {
@@ -276,6 +285,8 @@ server {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         fastcgi_param DOCUMENT_ROOT $realpath_root;
+        # Khách luôn vào qua HTTPS của Cloudflare ("Always Use HTTPS") → báo cho PHP biết là HTTPS
+        fastcgi_param HTTPS on;
         fastcgi_hide_header X-Powered-By;
         fastcgi_read_timeout 60;
     }
@@ -308,7 +319,7 @@ firewall-cmd --reload
 firewall-cmd --list-all
 ```
 
-> Vì sao: `.env` đặt `TRUSTED_PROXIES=*` (tin header từ proxy). Nếu để ai cũng vào thẳng port 80, kẻ xấu có thể giả IP / giả HTTPS.
+> Vì sao: nginx tin header `CF-Connecting-IP` để lấy IP khách. Nếu để ai cũng vào thẳng port 80, kẻ xấu có thể tự đặt header này để giả IP.
 > Bạn sẽ **không** mở được `http://1.2.3.4` trực tiếp nữa – đó là đúng.
 
 ## 11. Queue worker và scheduler
@@ -413,6 +424,7 @@ chmod 600 /root/.my.cnf
 cat > /usr/local/bin/smm-backup.sh <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077                 # file backup chứa dữ liệu nhạy cảm: chỉ root đọc được
 DIR=/var/backups/smm
 mkdir -p "$DIR"
 mysqldump --single-transaction --routines smm | gzip > "$DIR/db-$(date +%F).sql.gz"
@@ -435,7 +447,7 @@ echo '30 3 * * * /usr/local/bin/smm-backup.sh' | crontab -
 | 500 Server Error | Lỗi ứng dụng | Xem `storage/logs/laravel.log` |
 | 500 + "Permission denied" trong log | SELinux / quyền thư mục | Làm lại bước 8; xem `ausearch -m avc -ts recent` |
 | Không gọi được provider / không gửi được mail | SELinux chặn kết nối ra ngoài | `setsebool -P httpd_can_network_connect 1` |
-| Trang bị lỗi CSS, cảnh báo "mixed content" | Thiếu `TRUSTED_PROXIES` / `APP_URL` không phải https | Sửa `.env` rồi `php artisan optimize` |
+| Trang bị lỗi CSS, cảnh báo "mixed content" | `APP_URL` không phải https | Sửa `APP_URL=https://…` rồi `php artisan optimize` |
 | Đơn đứng mãi ở Pending | Queue worker không chạy | `systemctl status smm-queue`, `journalctl -u smm-queue -n 50` |
 | Trạng thái đơn không cập nhật | Cron scheduler không chạy | `crontab -u smm -l`, `systemctl status crond` |
 | Đại lý báo gọi API bị chặn (403 / trang Cloudflare) | Bot Fight Mode / Browser Integrity Check | Làm lại bước 12.4 – 12.5 |
@@ -446,7 +458,9 @@ echo '30 3 * * * /usr/local/bin/smm-backup.sh' | crontab -
 - [ ] `APP_DEBUG=false`, `APP_ENV=production`
 - [ ] Đã xoá `ADMIN_PASSWORD` khỏi `.env`, mật khẩu admin mạnh
 - [ ] `SANDBOX_PROVIDER_ENABLED=false`
-- [ ] Firewall chỉ mở SSH + port 80 cho Cloudflare (bước 10)
+- [ ] Firewall chỉ mở SSH + port 80 cho Cloudflare (bước 10); `TRUSTED_PROXIES` để trống
+- [ ] `.env` chmod 640; backup trong `/var/backups/smm` chỉ root đọc được
+- [ ] Khuyến nghị: nâng Cloudflare lên SSL **Full (strict)** (Phụ lục A) để mã hoá cả đoạn Cloudflare ↔ VPS
 - [ ] Đăng nhập SSH bằng key, tắt đăng nhập root bằng mật khẩu (`PasswordAuthentication no` trong `/etc/ssh/sshd_config`)
 - [ ] Bật cập nhật bảo mật tự động: `dnf install -y dnf-automatic && systemctl enable --now dnf-automatic-install.timer`
 - [ ] Backup tự động đã chạy (bước 16) và có bản sao ở nơi khác

@@ -35,8 +35,10 @@ class AppServiceProvider extends ServiceProvider
             TrustProxies::at($proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
         }
 
-        // Chạy sau Cloudflare "Flexible" (origin chỉ có HTTP) → vẫn sinh link https (kể cả trong email / queue).
+        // Production (APP_URL https): mọi link (kể cả link đặt lại mật khẩu trong email) luôn dùng đúng domain
+        // + https, không phụ thuộc Host / X-Forwarded-* do client gửi (chống giả mạo host).
         if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceRootUrl(config('app.url'));
             URL::forceScheme('https');
         }
 
@@ -51,10 +53,13 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         RateLimiter::for('smm-api', function (Request $request) {
-            $key = (string) $request->input('key');
+            $user = User::findByApiKey((string) $request->input('key'));
 
-            return Limit::perMinute((int) config('smm.api.rate_limit_per_minute'))
-                ->by($key !== '' ? User::hashApiKey($key) : $request->ip());
+            // Key hợp lệ → giới hạn theo tài khoản; key sai/thiếu → giới hạn chặt theo IP
+            // (tránh đổi key ngẫu nhiên mỗi request để né giới hạn và làm phình bảng api_logs).
+            return $user
+                ? Limit::perMinute((int) config('smm.api.rate_limit_per_minute'))->by('user:'.$user->id)
+                : Limit::perMinute(30)->by('ip:'.$request->ip());
         });
     }
 }

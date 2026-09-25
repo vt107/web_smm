@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Access;
 use App\Filament\NavGroup;
 use App\Models\Setting;
 use BackedEnum;
@@ -30,6 +31,11 @@ class Settings extends Page
 
     /** @var array<string, mixed> */
     public ?array $data = [];
+
+    public static function canAccess(): bool
+    {
+        return Access::isAdmin();
+    }
 
     public function mount(): void
     {

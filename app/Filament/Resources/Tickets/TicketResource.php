@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Tickets;
 
 use App\Enums\TicketCategory;
 use App\Enums\TicketStatus;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Tickets\Pages\ListTickets;
 use App\Filament\Resources\Tickets\Pages\ViewTicket;
@@ -26,6 +27,14 @@ use UnitEnum;
 
 class TicketResource extends Resource
 {
+    use StaffPermissions;
+
+    /** Nhân viên Support được xem (không sửa). */
+    protected static function supportAbilities(): array
+    {
+        return ['viewAny', 'view'];
+    }
+
     protected static ?string $model = Ticket::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLifebuoy;

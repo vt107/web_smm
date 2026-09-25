@@ -21,6 +21,9 @@ class TwoFactorService
 {
     public const EMAIL_CODE_MINUTES = 10;
 
+    /** Chấp nhận mã lệch ±2 bước 30 giây (bù lệch giờ điện thoại), Filament mặc định ±8. */
+    public const CODE_WINDOW = 2;
+
     private const EMAIL_CODE_MAX_ATTEMPTS = 5;
 
     public function __construct(private readonly Google2FA $google2fa) {}
@@ -85,7 +88,8 @@ class TwoFactorService
         RateLimiter::hit($limiterKey, 60);
 
         $code = (string) random_int(100000, 999999);
-        Cache::put($this->emailCacheKey($user), ['hash' => Hash::make($code), 'attempts' => 0], now()->addMinutes(self::EMAIL_CODE_MINUTES));
+        Cache::put($this->emailCacheKey($user), Hash::make($code), now()->addMinutes(self::EMAIL_CODE_MINUTES));
+        Cache::forget($this->emailCacheKey($user).':attempts');
 
         $user->notifyNow(new TwoFactorCode($code, self::EMAIL_CODE_MINUTES));
     }
@@ -93,19 +97,27 @@ class TwoFactorService
     public function verifyEmailCode(User $user, string $code): bool
     {
         $key = $this->emailCacheKey($user);
-        $entry = Cache::get($key);
+        $hash = Cache::get($key);
 
-        if (! $entry || $entry['attempts'] >= self::EMAIL_CODE_MAX_ATTEMPTS) {
+        if (! $hash) {
             return false;
         }
 
-        if (! Hash::check(trim($code), $entry['hash'])) {
-            Cache::put($key, ['hash' => $entry['hash'], 'attempts' => $entry['attempts'] + 1], now()->addMinutes(self::EMAIL_CODE_MINUTES));
+        // Tăng bộ đếm TRƯỚC khi kiểm tra (nguyên tử) → gửi song song nhiều mã cũng không vượt giới hạn.
+        Cache::add("{$key}:attempts", 0, now()->addMinutes(self::EMAIL_CODE_MINUTES));
 
+        if (Cache::increment("{$key}:attempts") > self::EMAIL_CODE_MAX_ATTEMPTS) {
+            Cache::forget($key);
+
+            return false;
+        }
+
+        if (! Hash::check(trim($code), $hash)) {
             return false;
         }
 
         Cache::forget($key);
+        Cache::forget("{$key}:attempts");
 
         return true;
     }
@@ -127,6 +139,6 @@ class TwoFactorService
 
     private function app(): AppAuthentication
     {
-        return AppAuthentication::make()->recoverable();
+        return AppAuthentication::make()->recoverable()->codeWindow(self::CODE_WINDOW);
     }
 }

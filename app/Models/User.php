@@ -126,10 +126,15 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return filled($this->app_authentication_secret) || $this->has_email_authentication;
     }
 
-    /** Chỉ admin đang hoạt động được vào trang quản trị Filament. */
+    /** Admin và nhân viên Support (đang hoạt động) được vào trang quản trị; quyền chi tiết ở App\Filament\Access. */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isAdmin() && $this->isActive();
+        return $this->isStaff() && $this->isActive();
+    }
+
+    public function isStaff(): bool
+    {
+        return in_array($this->role, [UserRole::Admin, UserRole::Support], true);
     }
 
     public function isAdmin(): bool

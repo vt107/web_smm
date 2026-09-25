@@ -123,13 +123,15 @@
         <div class="card h-fit">
             <h2 class="card-title">Paid but not credited?</h2>
             <p class="mb-4 text-sm text-slate-600">
-                For example, you forgot the transfer description or the exchange deducted a withdrawal fee. Paste the bank transaction ID or tx hash to claim your funds.
+                For example, you forgot the transfer description or the exchange deducted a withdrawal fee.
+                <span x-show="claimMethod?.gateway === 'sepay'">Enter the <b>reference code</b> from your bank receipt (e.g. FT23…) and your balance is credited right away.</span>
+                <span x-show="claimMethod?.gateway === 'crypto'">Paste the <b>transaction hash</b>. Our team will verify it and credit your balance shortly.</span>
             </p>
             <form class="space-y-3" @submit.prevent="claim()">
                 <select class="input" x-model.number="claimMethodId" required>
                     <template x-for="m in methods" :key="m.id"><option :value="m.id" x-text="m.name"></option></template>
                 </select>
-                <input class="input font-mono" x-model="txid" placeholder="Transaction ID / tx hash" required>
+                <input class="input font-mono" x-model="txid" :placeholder="claimMethod?.gateway === 'crypto' ? 'Transaction hash' : 'Bank reference code'" required>
                 <button class="btn-primary w-full" :disabled="busy">Claim funds</button>
             </form>
         </div>
@@ -210,6 +212,9 @@
                             }
                             if (fresh.status !== 'pending') clearInterval(this.poller);
                         }, 5000);
+                    },
+                    get claimMethod() {
+                        return this.methods.find(m => m.id === this.claimMethodId) ?? null;
                     },
                     async claim() {
                         this.busy = true;

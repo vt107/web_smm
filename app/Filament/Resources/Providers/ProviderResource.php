@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Providers;
 
 use App\Enums\ActiveStatus;
 use App\Exceptions\ProviderException;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Providers\Pages\ManageProviders;
 use App\Filament\Support\Fmt;
@@ -26,6 +27,8 @@ use UnitEnum;
 
 class ProviderResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = Provider::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedServerStack;

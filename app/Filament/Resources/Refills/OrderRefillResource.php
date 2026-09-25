@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Refills;
 
 use App\Enums\RefillStatus;
+use App\Filament\Access;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Refills\Pages\ManageOrderRefills;
@@ -20,6 +22,14 @@ use UnitEnum;
 
 class OrderRefillResource extends Resource
 {
+    use StaffPermissions;
+
+    /** Nhân viên Support được xem (không sửa). */
+    protected static function supportAbilities(): array
+    {
+        return ['viewAny'];
+    }
+
     protected static ?string $model = OrderRefill::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPathRoundedSquare;
@@ -56,6 +66,7 @@ class OrderRefillResource extends Resource
             ->recordActions([
                 Action::make('setStatus')
                     ->label('Change status')
+                    ->visible(fn () => Access::isAdmin())
                     ->icon(Heroicon::OutlinedPencilSquare)
                     ->fillForm(fn (OrderRefill $r) => ['status' => $r->status])
                     ->schema([Select::make('status')->label('Status')->options(RefillStatus::class)->required()])

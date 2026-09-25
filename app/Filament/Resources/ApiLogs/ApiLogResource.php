@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ApiLogs;
 
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\ApiLogs\Pages\ManageApiLogs;
 use App\Models\ApiLog;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class ApiLogResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = ApiLog::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCommandLine;

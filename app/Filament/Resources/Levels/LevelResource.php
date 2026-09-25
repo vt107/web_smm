@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Levels;
 
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Levels\Pages\ManageLevels;
 use App\Filament\Support\Fmt;
@@ -23,6 +24,8 @@ use UnitEnum;
 
 class LevelResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = Level::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTrophy;

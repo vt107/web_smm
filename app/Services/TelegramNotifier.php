@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Enums\TelegramEvent;
 use App\Jobs\SendTelegramMessage;
 use App\Support\Site;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
@@ -61,12 +63,12 @@ class TelegramNotifier
         $token = $this->token() ?? throw new RuntimeException('Telegram bot token is not set');
 
         foreach ($this->chatIds() as $chatId) {
-            $response = Http::timeout(15)->asJson()->post(self::API.$token.'/sendMessage', [
+            $response = $this->request(fn () => Http::timeout(15)->asJson()->post(self::API.$token.'/sendMessage', [
                 'chat_id' => $chatId,
                 'text' => $html,
                 'parse_mode' => 'HTML',
                 'disable_web_page_preview' => true,
-            ]);
+            ]));
 
             if (! $response->json('ok')) {
                 throw new RuntimeException("Chat {$chatId}: ".($response->json('description') ?? 'HTTP '.$response->status()));
@@ -82,7 +84,7 @@ class TelegramNotifier
     public function discoverChats(?string $token = null): array
     {
         $token ??= $this->token() ?? throw new RuntimeException('Telegram bot token is not set');
-        $response = Http::timeout(15)->get(self::API.$token.'/getUpdates');
+        $response = $this->request(fn () => Http::timeout(15)->get(self::API.$token.'/getUpdates'));
 
         if (! $response->json('ok')) {
             throw new RuntimeException($response->json('description') ?? 'HTTP '.$response->status());
@@ -99,6 +101,16 @@ class TelegramNotifier
             ])
             ->values()
             ->all();
+    }
+
+    /** URL có chứa bot token → không để lỗi kết nối (có URL) lọt vào log / failed_jobs. */
+    private function request(callable $send): Response
+    {
+        try {
+            return $send();
+        } catch (ConnectionException) {
+            throw new RuntimeException('Could not connect to Telegram');
+        }
     }
 
     public static function encryptToken(string $token): string

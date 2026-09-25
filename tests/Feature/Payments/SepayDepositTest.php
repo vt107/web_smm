@@ -35,13 +35,14 @@ class SepayDepositTest extends TestCase
     {
         static $id = 1000;
 
+        $payload += ['id' => ++$id];
+
         return $this->postJson("/api/webhooks/sepay/{$this->method->id}", $payload + [
-            'id' => ++$id,
             'gateway' => 'MBBank',
             'transactionDate' => now('Asia/Ho_Chi_Minh')->format('Y-m-d H:i:s'),
             'accountNumber' => '0123456789',
             'transferType' => 'in',
-            'referenceCode' => 'FT'.$id,
+            'referenceCode' => 'FT'.$payload['id'],
         ], ['Authorization' => "Apikey {$key}"]);
     }
 
@@ -106,13 +107,25 @@ class SepayDepositTest extends TestCase
         $transfer = IncomingTransfer::query()->sole();
         $this->assertSame(TransferStatus::Unmatched, $transfer->status);
 
-        $deposit = app(DepositService::class)->claim($this->user, $this->method, '777');
+        // Khách nhập mã tham chiếu trên biên lai ngân hàng (không phải id nội bộ của SePay).
+        $this->expectsClaimError('777', 'Transaction not found yet, please try again in a few minutes');
+        $deposit = app(DepositService::class)->claim($this->user, $this->method, 'FT777');
 
         $this->assertSame(DepositMatchedBy::UserClaim, $deposit->matched_by);
         $this->assertSame('10.000000', $this->user->fresh()->balance);
 
         $this->expectExceptionMessage('This transaction has already been used');
-        app(DepositService::class)->claim($this->user, $this->method, '777');
+        app(DepositService::class)->claim($this->user, $this->method, 'FT777');
+    }
+
+    private function expectsClaimError(string $reference, string $message): void
+    {
+        try {
+            app(DepositService::class)->claim($this->user, $this->method, $reference);
+            $this->fail('Claim should have failed');
+        } catch (SmmException $e) {
+            $this->assertSame($message, $e->getMessage());
+        }
     }
 
     public function test_claim_is_rejected_when_amount_differs_too_much(): void
@@ -123,7 +136,7 @@ class SepayDepositTest extends TestCase
         $this->expectException(SmmException::class);
         $this->expectExceptionMessage('No matching deposit request found for this transaction');
 
-        app(DepositService::class)->claim($this->user, $this->method, '778');
+        app(DepositService::class)->claim($this->user, $this->method, 'FT778');
     }
 
     public function test_other_user_cannot_claim_transfer(): void
@@ -133,6 +146,6 @@ class SepayDepositTest extends TestCase
 
         $this->expectExceptionMessage('No matching deposit request found for this transaction');
 
-        app(DepositService::class)->claim(User::factory()->create(), $this->method, '779');
+        app(DepositService::class)->claim(User::factory()->create(), $this->method, 'FT779');
     }
 }

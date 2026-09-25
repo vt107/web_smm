@@ -32,15 +32,16 @@ services:
       MYSQL_DATABASE: "${DB_DATABASE:-smm}"
       MYSQL_USER: "${DB_USERNAME:-smm}"
       MYSQL_PASSWORD: "${DB_PASSWORD:-secret}"
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-root}"
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
-      - "${FORWARD_DB_PORT:-3307}:3306"
+      # Chỉ mở cho máy local (không cho máy khác trong mạng LAN truy cập DB dev)
+      - "127.0.0.1:${FORWARD_DB_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       retries: 20
     restart: unless-stopped

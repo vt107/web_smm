@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Categories;
 
 use App\Enums\ActiveStatus;
 use App\Enums\Platform;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Categories\Pages\ManageCategories;
 use App\Models\Category;
@@ -22,6 +23,8 @@ use UnitEnum;
 
 class CategoryResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = Category::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;

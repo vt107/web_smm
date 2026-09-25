@@ -129,16 +129,20 @@ class DepositService
     }
 
     /**
-     * Khách dán mã giao dịch / tx hash để nhận giao dịch chưa khớp.
-     * Điều kiện: có phiếu cùng kênh tạo trước giao dịch, còn trong thời hạn nhận,
-     * và số tiền lệch không quá claim_tolerance_percent.
+     * Khách nhận giao dịch SePay chưa khớp bằng MÃ THAM CHIẾU NGÂN HÀNG (vd FT23…) – mã chỉ người chuyển thấy
+     * trên biên lai (không dùng id nội bộ của SePay vì là số tăng dần, đoán được).
+     * Điều kiện: có phiếu cùng kênh tạo trước giao dịch, còn trong thời hạn, lệch ≤ claim_tolerance_percent.
      *
      * @throws SmmException
      */
-    public function claim(User $user, PaymentMethod $method, string $externalId): Deposit
+    public function claim(User $user, PaymentMethod $method, string $reference): Deposit
     {
+        if ($method->gateway !== PaymentGateway::Sepay) {
+            throw new SmmException('Incorrect request');
+        }
+
         $transfer = $method->incomingTransfers()
-            ->where('external_id', trim($externalId))
+            ->where('raw->referenceCode', trim($reference))
             ->first();
 
         if (! $transfer) {
@@ -149,25 +153,92 @@ class DepositService
             throw new SmmException('This transaction has already been used');
         }
 
-        $tolerance = (string) config('smm.deposits.claim_tolerance_percent');
-
-        $deposit = $this->claimableDeposits($method, $transfer->transferred_at)
-            ->where('user_id', $user->id)
-            ->latest('id')
-            ->get()
-            ->first(function (Deposit $d) use ($transfer, $tolerance) {
-                // So với số tiền gốc (không tính phần lẻ nhận diện của crypto).
-                $base = Money::mul($d->requested_amount, $d->exchange_rate);
-                $diff = Money::abs(Money::sub($transfer->amount, $base));
-
-                return Money::cmp($diff, Money::mul($base, Money::div($tolerance, 100, 12))) <= 0;
-            });
+        $deposit = $this->claimableDepositFor($user, $transfer);
 
         if (! $deposit) {
             throw new SmmException('No matching deposit request found for this transaction');
         }
 
         return $this->complete($deposit, $transfer, DepositMatchedBy::UserClaim);
+    }
+
+    /**
+     * Khách xin nhận giao dịch crypto chưa khớp. Tx hash công khai trên blockchain nên KHÔNG tự cộng tiền:
+     * đánh dấu người xin nhận và báo admin duyệt (Incoming transfers → Approve claim).
+     *
+     * @throws SmmException
+     */
+    public function requestCryptoClaim(User $user, PaymentMethod $method, string $txHash): IncomingTransfer
+    {
+        if ($method->gateway !== PaymentGateway::Crypto) {
+            throw new SmmException('Incorrect request');
+        }
+
+        return DB::transaction(function () use ($user, $method, $txHash) {
+            $transfer = $method->incomingTransfers()->where('external_id', trim($txHash))->lockForUpdate()->first();
+
+            if (! $transfer) {
+                throw new SmmException('Transaction not found yet, please try again in a few minutes');
+            }
+
+            if ($transfer->status !== TransferStatus::Unmatched) {
+                throw new SmmException('This transaction has already been used');
+            }
+
+            if ($transfer->claimed_by !== null) {
+                throw new SmmException('This transaction is already under review');
+            }
+
+            if (! $this->claimableDepositFor($user, $transfer)) {
+                throw new SmmException('No matching deposit request found for this transaction');
+            }
+
+            $transfer->forceFill(['claimed_by' => $user->id, 'claimed_at' => now()])->save();
+
+            $this->telegram->notify(TelegramEvent::UnmatchedTransfer, implode("\n", [
+                '🔎 <b>Crypto claim needs review</b>',
+                'Customer: '.e($user->username),
+                'Amount: '.Money::format($transfer->amount).' '.e($method->currency).' via '.e($method->name),
+                'Tx: '.e($transfer->external_id),
+                'Check the sender, then approve or reject: '.url('/admin/incoming-transfers'),
+            ]));
+
+            return $transfer;
+        });
+    }
+
+    /** Admin duyệt yêu cầu nhận giao dịch crypto của khách. */
+    public function approveClaim(IncomingTransfer $transfer): Deposit
+    {
+        $claimant = $transfer->claimant ?? throw new SmmException('Incorrect request');
+
+        $deposit = $this->claimableDepositFor($claimant, $transfer);
+
+        return $deposit
+            ? $this->complete($deposit, $transfer, DepositMatchedBy::Admin)
+            : $this->assignToUser($transfer, $claimant);
+    }
+
+    public function rejectClaim(IncomingTransfer $transfer): void
+    {
+        $transfer->forceFill(['claimed_by' => null, 'claimed_at' => null])->save();
+    }
+
+    /** Phiếu của khách có thể khớp giao dịch (so với số tiền gốc, không tính phần lẻ nhận diện của crypto). */
+    private function claimableDepositFor(User $user, IncomingTransfer $transfer): ?Deposit
+    {
+        $tolerance = (string) config('smm.deposits.claim_tolerance_percent');
+
+        return $this->claimableDeposits($transfer->paymentMethod, $transfer->transferred_at)
+            ->where('user_id', $user->id)
+            ->latest('id')
+            ->get()
+            ->first(function (Deposit $d) use ($transfer, $tolerance) {
+                $base = Money::mul($d->requested_amount, $d->exchange_rate);
+                $diff = Money::abs(Money::sub($transfer->amount, $base));
+
+                return Money::cmp($diff, Money::mul($base, Money::div($tolerance, 100, 12))) <= 0;
+            });
     }
 
     /** Admin gán giao dịch chưa khớp cho 1 user: tạo phiếu mới và cộng tiền. */

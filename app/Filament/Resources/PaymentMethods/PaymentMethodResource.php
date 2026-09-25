@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PaymentMethods;
 
 use App\Enums\ActiveStatus;
 use App\Enums\PaymentGateway;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\PaymentMethods\Pages\CreatePaymentMethod;
 use App\Filament\Resources\PaymentMethods\Pages\EditPaymentMethod;
@@ -27,6 +28,8 @@ use UnitEnum;
 
 class PaymentMethodResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = PaymentMethod::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;

@@ -17,13 +17,17 @@
 
                 <div>
                     <label class="label">Search services</label>
-                    <input class="input" x-model.debounce.200ms="search" placeholder="Service name or ID…">
+                    <input class="input" x-model.debounce.300ms="search" placeholder="Service name or ID…">
+                    <p class="hint" x-show="searchResults !== null" x-cloak>
+                        <span x-text="searchResults?.length ?? 0"></span> matching services
+                        · <button type="button" class="font-medium text-indigo-600 hover:underline" @click="search = ''">Clear search</button>
+                    </p>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
                         <label class="label">Category</label>
-                        <select class="input" x-model.number="categoryId" @change="selectFirstService()">
+                        <select class="input" x-model.number="categoryId" @change="changeCategory()" :disabled="searchResults !== null">
                             <template x-for="c in filteredCategories" :key="c.id">
                                 <option :value="c.id" x-text="c.name" :selected="c.id === categoryId"></option>
                             </template>
@@ -31,7 +35,8 @@
                     </div>
                     <div>
                         <label class="label">Service</label>
-                        <select class="input" x-model.number="serviceId" @change="resetForm()">
+                        <select class="input" x-model.number="serviceId" @change="resetForm()" :disabled="loadingServices">
+                            <option x-show="loadingServices" value="">Loading…</option>
                             <template x-for="s in categoryServices" :key="s.id">
                                 <option :value="s.id" x-text="`#${s.id} · ${s.name} — ${s.rate}`" :selected="s.id === serviceId"></option>
                             </template>
@@ -149,27 +154,38 @@
             function newOrderPage() {
                 return {
                     tab: 'single', loaded: false, submitting: false,
-                    categories: [], currency: null,
+                    categories: [], currency: null, servicesByCategory: {}, searchResults: null, loadingServices: false,
                     platform: '', search: '', categoryId: null, serviceId: null,
                     form: { link: '', quantity: null, extra: {}, dripfeed: false, runs: 2, interval: 30 },
                     mass: '', massResults: [],
 
+                    // Danh mục tải trước (nhẹ), dịch vụ tải theo từng danh mục khi chọn → nhanh cả khi có hàng nghìn dịch vụ.
                     async init() {
-                        const data = await api.get('/ajax/services');
+                        const data = await api.get('/ajax/catalog');
                         this.categories = data.categories;
                         this.currency = data.currency;
                         this.loaded = true;
 
                         const preset = Number(new URLSearchParams(location.search).get('service'));
-                        const found = preset && this.categories.find(c => c.services.some(s => s.id === preset));
-                        if (found) {
-                            this.categoryId = found.id;
-                            this.serviceId = preset;
-                        } else {
-                            this.resetCategory();
+                        let presetService = null;
+                        if (preset) {
+                            try {
+                                presetService = (await api.get(`/ajax/catalog/services/${preset}`)).service;
+                            } catch {
+                                // Dịch vụ không còn bán → chọn mặc định.
+                            }
                         }
-                        this.resetForm();
-                        this.$watch('search', () => this.resetCategory());
+
+                        if (presetService) {
+                            this.categoryId = presetService.category_id;
+                            await this.loadCategory(this.categoryId);
+                            this.serviceId = preset;
+                            this.resetForm();
+                        } else {
+                            await this.resetCategory();
+                        }
+
+                        this.$watch('search', () => this.runSearch());
                     },
 
                     get platforms() {
@@ -178,17 +194,31 @@
                         return [...seen].map(([value, label]) => ({ value, label }));
                     },
                     get filteredCategories() {
-                        const q = this.search.trim().toLowerCase();
-                        return this.categories
-                            .filter(c => !this.platform || c.platform === this.platform)
-                            .map(c => ({ ...c, services: q ? c.services.filter(s => String(s.id) === q || s.name.toLowerCase().includes(q)) : c.services }))
-                            .filter(c => c.services.length);
+                        return this.categories.filter(c => !this.platform || c.platform === this.platform);
                     },
                     get categoryServices() {
-                        return this.filteredCategories.find(c => c.id === this.categoryId)?.services ?? [];
+                        return this.searchResults ?? this.servicesByCategory[this.categoryId] ?? [];
                     },
                     get service() {
                         return this.categoryServices.find(s => s.id === this.serviceId) ?? null;
+                    },
+                    async loadCategory(id) {
+                        if (!id || this.servicesByCategory[id]) return;
+                        this.loadingServices = true;
+                        try {
+                            this.servicesByCategory[id] = (await api.get(`/ajax/catalog/categories/${id}`)).services;
+                        } finally {
+                            this.loadingServices = false;
+                        }
+                    },
+                    async runSearch() {
+                        const q = this.search.trim();
+                        this.searchResults = q ? (await api.get('/ajax/catalog/search', { q })).services : null;
+                        this.selectFirstService();
+                    },
+                    async changeCategory() {
+                        await this.loadCategory(this.categoryId);
+                        this.selectFirstService();
                     },
                     get needsQuantity() {
                         return this.service && !this.service.is_package && !this.service.lines_field;
@@ -210,9 +240,11 @@
                         return formatMoney(usd, this.currency);
                     },
 
-                    resetCategory() {
+                    async resetCategory() {
+                        this.search = '';
+                        this.searchResults = null;
                         this.categoryId = this.filteredCategories[0]?.id ?? null;
-                        this.selectFirstService();
+                        await this.changeCategory();
                     },
                     selectFirstService() {
                         this.serviceId = this.categoryServices[0]?.id ?? null;

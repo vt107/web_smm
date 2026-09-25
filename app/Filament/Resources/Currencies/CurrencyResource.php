@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Currencies;
 
 use App\Enums\ActiveStatus;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Currencies\Pages\ManageCurrencies;
 use App\Models\Currency;
@@ -21,6 +22,8 @@ use UnitEnum;
 
 class CurrencyResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = Currency::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCurrencyDollar;

@@ -19,6 +19,7 @@ class IncomingTransfer extends Model
             'block_number' => 'integer',
             'confirmations' => 'integer',
             'transferred_at' => 'datetime',
+            'claimed_at' => 'datetime',
             'raw' => 'array',
         ];
     }
@@ -26,6 +27,11 @@ class IncomingTransfer extends Model
     public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class);
+    }
+
+    public function claimant(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'claimed_by');
     }
 
     public function deposit(): BelongsTo

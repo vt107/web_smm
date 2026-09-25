@@ -11,6 +11,6 @@ Route::post('/v2', V2Controller::class)->middleware('throttle:smm-api');
 Route::post('/webhooks/sepay/{paymentMethod}', SepayWebhookController::class);
 
 // Provider giả lập cho môi trường test (SANDBOX_PROVIDER_ENABLED=true).
-if (config('smm.sandbox.enabled')) {
+if (config('smm.sandbox.enabled') && filled(config('smm.sandbox.key'))) {
     Route::post('/sandbox-provider/v2', SandboxProviderController::class);
 }

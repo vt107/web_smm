@@ -17,7 +17,7 @@
                         <tr>
                             <td class="font-medium" x-text="o.id"></td>
                             <td class="max-w-56"><span class="line-clamp-2" x-text="o.service_name"></span></td>
-                            <td class="max-w-48"><a :href="o.link" target="_blank" rel="noopener" class="block truncate text-indigo-600 hover:underline" x-text="o.link"></a></td>
+                            <td class="max-w-48"><a :href="/^https?:\/\//i.test(o.link) ? o.link : null" target="_blank" rel="noopener" class="block truncate text-indigo-600 hover:underline" x-text="o.link"></a></td>
                             <td x-text="o.quantity.toLocaleString()"></td>
                             <td x-text="o.start_count ?? '—'"></td>
                             <td x-text="o.remains ?? '—'"></td>

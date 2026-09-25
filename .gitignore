@@ -25,3 +25,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Báo cáo quét bảo mật
+vbsec-reports/
+.vbsec-tmp/

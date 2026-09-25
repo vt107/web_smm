@@ -43,6 +43,12 @@ class PricingService
         return Money::div(Money::mul($rate, $totalQuantity, 12), 1000, 12);
     }
 
+    /** Áp % giảm giá lên 1 mức giá (dùng cho danh mục đã cache). */
+    public function applyDiscountTo(string $amount, string $discountPercent): string
+    {
+        return $this->applyDiscount($amount, $discountPercent);
+    }
+
     private function applyDiscount(string $amount, string $discountPercent): string
     {
         $factor = Money::div(Money::sub(100, $discountPercent, 12), 100, 12);

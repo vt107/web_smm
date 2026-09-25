@@ -61,12 +61,22 @@ class SendOrderToProvider implements ShouldQueue
                 return;
             }
 
-            $order->forceFill([
-                'provider_order_id' => $providerOrderId,
-                'status' => OrderStatus::Processing,
-                'provider_error' => null,
-                'send_attempts' => $order->send_attempts + 1,
-            ])->save();
+            $updated = Order::query()
+                ->whereKey($order->id)
+                ->where('status', OrderStatus::Pending)
+                ->whereNull('provider_order_id')
+                ->update([
+                    'provider_order_id' => $providerOrderId,
+                    'status' => OrderStatus::Processing,
+                    'provider_error' => null,
+                    'send_attempts' => $order->send_attempts + 1,
+                    'updated_at' => now(),
+                ]);
+
+            if ($updated === 0) {
+                // Đơn đã bị huỷ/hoàn tiền trong lúc đang gửi → huỷ luôn bên provider và báo admin.
+                $this->cancelOrphan($order, $providerOrderId, $providers);
+            }
         } finally {
             $lock->release();
 
@@ -75,6 +85,21 @@ class SendOrderToProvider implements ShouldQueue
                 static::dispatch($this->orderId)->delay(now()->addSeconds($retryAfter));
             }
         }
+    }
+
+    private function cancelOrphan(Order $order, string $providerOrderId, ProviderManager $providers): void
+    {
+        try {
+            $providers->for($order->provider)->cancel([$providerOrderId]);
+        } catch (ProviderException) {
+            // Báo admin xử lý tay bên dưới.
+        }
+
+        app(TelegramNotifier::class)->notify(TelegramEvent::OrderFailed, implode("\n", [
+            "⚠️ <b>Order #{$order->id} was canceled while being sent</b>",
+            'Provider: '.e($order->provider->name).' · provider order #'.e($providerOrderId),
+            'A cancel request was sent. Check the provider panel and cancel it manually if it is still running.',
+        ]));
     }
 
     /** @return int|null Số giây chờ trước lần gửi lại; null nếu đã huỷ đơn. */

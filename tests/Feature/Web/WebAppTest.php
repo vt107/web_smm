@@ -81,11 +81,17 @@ class WebAppTest extends TestCase
         Service::factory()->create(['rate' => '2', 'name' => 'IG Likes']);
         $this->user->forceFill(['currency' => 'VND', 'level_id' => 3])->save(); // Gold −5%
 
-        $this->actingAs($this->user)->getJson('/ajax/services')
+        $category = $this->actingAs($this->user)->getJson('/ajax/catalog')
             ->assertOk()
             ->assertJsonPath('currency.code', 'VND')
-            ->assertJsonPath('categories.0.services.0.rate_usd', '1.90')
-            ->assertJsonPath('categories.0.services.0.rate', '49.400 ₫');
+            ->assertJsonPath('categories.0.service_count', 1)
+            ->json('categories.0.id');
+
+        $this->getJson("/ajax/catalog/categories/{$category}")
+            ->assertJsonPath('services.0.rate_usd', '1.90')
+            ->assertJsonPath('services.0.rate', '49.400 ₫');
+
+        $this->getJson('/ajax/catalog/search?q=IG Lik')->assertJsonPath('services.0.name', 'IG Likes');
     }
 
     public function test_place_order_and_business_errors_are_localized(): void

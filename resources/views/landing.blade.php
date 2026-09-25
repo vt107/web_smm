@@ -33,7 +33,7 @@
                     'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['answer']],
                 ], $faq)] : null,
             ])),
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
     @endpush
 
     {{-- Hero --}}
@@ -96,7 +96,7 @@
             <p class="mx-auto mt-3 max-w-2xl text-center text-slate-600">Followers, likes, views, comments, members and more – all in one place.</p>
             <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @forelse ($platforms as $p)
-                    <a href="{{ route('pricing') }}#{{ $p['platform'] }}" class="card flex items-center gap-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                    <a href="{{ route('pricing', ['platform' => $p['platform']]) }}" class="card flex items-center gap-4 transition hover:-translate-y-0.5 hover:shadow-md">
                         <span class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 {{ $brand[$p['platform']] ?? '' }}">
                             <x-platform-icon :platform="$p['platform']" class="size-6" />
                         </span>

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\TelegramEvent;
+use App\Filament\Access;
 use App\Filament\NavGroup;
 use App\Http\Controllers\Public\LandingController;
 use App\Models\Setting;
@@ -50,8 +51,16 @@ class WebsiteSettings extends Page
 
     protected static ?int $navigationSort = 98;
 
+    /** Không nhận SVG: file SVG có thể chứa script chạy trên domain của website. */
+    private const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/x-icon', 'image/vnd.microsoft.icon'];
+
     /** @var array<string, mixed> */
     public ?array $data = [];
+
+    public static function canAccess(): bool
+    {
+        return Access::isAdmin();
+    }
 
     public function mount(): void
     {
@@ -121,10 +130,10 @@ class WebsiteSettings extends Page
                             ->helperText('Shown in the header, browser tab, emails and the admin panel.'),
                         TextInput::make('tagline')->label('Tagline')->maxLength(120)
                             ->helperText('A short slogan, e.g. "Cheapest & fastest SMM panel".'),
-                        FileUpload::make('logo')->label('Logo')->image()->disk('public')->directory('site')
+                        FileUpload::make('logo')->label('Logo')->image()->acceptedFileTypes(self::IMAGE_TYPES)->disk('public')->directory('site')
                             ->maxSize(1024)->imagePreviewHeight('80')
                             ->helperText('Square image works best (PNG or SVG, max 1 MB). Leave empty to use the default logo.'),
-                        FileUpload::make('favicon')->label('Browser tab icon (favicon)')->image()->disk('public')->directory('site')
+                        FileUpload::make('favicon')->label('Browser tab icon (favicon)')->image()->acceptedFileTypes(self::IMAGE_TYPES)->disk('public')->directory('site')
                             ->maxSize(512)->imagePreviewHeight('48')
                             ->helperText('Small square image (e.g. 64×64 PNG). Leave empty to use the logo.'),
                         Toggle::make('show_name')->label('Show website name next to the logo')
@@ -138,7 +147,7 @@ class WebsiteSettings extends Page
                             ->helperText('Best 50–60 characters. Leave empty to use "Website name – Tagline".'),
                         Textarea::make('description')->label('Description (Google)')->rows(3)->maxLength(170)->required()->columnSpanFull()
                             ->helperText('The text shown under your site in Google results. Best 140–160 characters.'),
-                        FileUpload::make('og_image')->label('Sharing image')->image()->disk('public')->directory('site')
+                        FileUpload::make('og_image')->label('Sharing image')->image()->acceptedFileTypes(self::IMAGE_TYPES)->disk('public')->directory('site')
                             ->maxSize(2048)->imagePreviewHeight('100')
                             ->helperText('Shown when a link is shared on Facebook, Telegram, Zalo… Recommended 1200×630 px.'),
                         Section::make()->schema([

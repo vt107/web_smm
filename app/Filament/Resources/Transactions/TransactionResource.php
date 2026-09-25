@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Transactions;
 
 use App\Enums\TransactionType;
+use App\Filament\Concerns\StaffPermissions;
 use App\Filament\NavGroup;
 use App\Filament\Resources\Transactions\Pages\ManageTransactions;
 use App\Filament\Support\Fmt;
@@ -21,6 +22,8 @@ use UnitEnum;
 
 class TransactionResource extends Resource
 {
+    use StaffPermissions;
+
     protected static ?string $model = Transaction::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;

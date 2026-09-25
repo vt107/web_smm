@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -18,6 +19,9 @@ use Illuminate\View\View;
 class TwoFactorChallengeController extends Controller
 {
     private const SESSION_KEY = '2fa';
+
+    /** Sai quá số lần này (theo tài khoản, mọi IP) → huỷ lượt đăng nhập, khoá 15 phút. */
+    private const MAX_FAILURES = 5;
 
     public function __construct(private readonly TwoFactorService $twoFactor) {}
 
@@ -61,6 +65,15 @@ class TwoFactorChallengeController extends Controller
             'code' => ['required', 'string', 'max:50'],
         ]);
 
+        $limiterKey = "2fa-verify:{$user->id}";
+
+        if (RateLimiter::tooManyAttempts($limiterKey, self::MAX_FAILURES)) {
+            $request->session()->forget(self::SESSION_KEY);
+
+            throw ValidationException::withMessages(['email' => 'Too many invalid codes. Please try again in '.ceil(RateLimiter::availableIn($limiterKey) / 60).' minutes.'])
+                ->redirectTo(route('login'));
+        }
+
         $valid = match ($data['method']) {
             'app' => filled($user->app_authentication_secret) && $this->twoFactor->verifyAppCode($user->app_authentication_secret, $data['code']),
             'recovery' => filled($user->app_authentication_secret) && $this->twoFactor->useRecoveryCode($user, $data['code']),
@@ -68,9 +81,12 @@ class TwoFactorChallengeController extends Controller
         };
 
         if (! $valid) {
+            RateLimiter::hit($limiterKey, 15 * 60);
+
             throw ValidationException::withMessages(['code' => 'The code is invalid or has expired.'])->redirectTo(route('two-factor.challenge', ['method' => $data['method']]));
         }
 
+        RateLimiter::clear($limiterKey);
         $remember = (bool) $request->session()->pull(self::SESSION_KEY)['remember'];
 
         return app(AuthController::class)->completeLogin($request, $user, $remember);
