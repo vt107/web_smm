@@ -43,6 +43,17 @@ return [
         ],
     ],
 
+    // Provider giả lập (App\Http\Controllers\Sandbox) để test luồng gửi đơn mà không tốn tiền thật.
+    // TẮT ở production.
+    'sandbox' => [
+        'enabled' => (bool) env('SANDBOX_PROVIDER_ENABLED', false),
+        'key' => env('SANDBOX_PROVIDER_KEY', 'sandbox-secret'),
+        // URL mà queue worker gọi tới (trong Docker: tên service "app").
+        'url' => env('SANDBOX_PROVIDER_URL', 'http://app:8000/api/sandbox-provider/v2'),
+        // Độ dài mỗi giai đoạn trạng thái đơn (phút).
+        'stage_minutes' => (int) env('SANDBOX_STAGE_MINUTES', 1),
+    ],
+
     'exchange_rates' => [
         'api_url' => 'https://open.er-api.com/v6/latest/USD',
     ],

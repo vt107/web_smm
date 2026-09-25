@@ -26,6 +26,8 @@
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="smm_testing"/>
         <env name="DB_URL" value=""/>
+        <env name="SANDBOX_PROVIDER_ENABLED" value="true"/>
+        <env name="SANDBOX_PROVIDER_URL" value="http://sandbox.test/api/sandbox-provider/v2"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
