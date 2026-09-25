@@ -2,6 +2,7 @@
 
 Panel bán lại dịch vụ SMM (Laravel 12 + MySQL 8), logic tham khảo smmraja.com.
 Thiết kế database: [docs/database-design.md](docs/database-design.md).
+Triển khai lên VPS (AlmaLinux 9 + nginx + Cloudflare): [docs/deploy-almalinux.md](docs/deploy-almalinux.md).
 
 ## Chạy local (Docker)
 

@@ -34,7 +34,7 @@ class ProviderResource extends Resource
 
     protected static ?string $modelLabel = 'provider';
 
-    protected static ?string $pluralModelLabel = 'Provider';
+    protected static ?string $pluralModelLabel = 'Providers';
 
     protected static ?int $navigationSort = 3;
 

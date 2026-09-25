@@ -8,6 +8,10 @@ return [
         'password' => env('ADMIN_PASSWORD'),
     ],
 
+    // Proxy được tin tưởng (Cloudflare / load balancer) để lấy đúng IP khách và HTTPS.
+    // "*" = tin mọi proxy – chỉ dùng khi firewall chỉ cho Cloudflare truy cập port 80.
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
     'api' => [
         // Số request / phút cho mỗi API key của khách.
         'rate_limit_per_minute' => 300,
