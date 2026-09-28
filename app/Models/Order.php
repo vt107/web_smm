@@ -41,6 +41,7 @@ class Order extends Model
             'interval' => 'integer',
             'send_attempts' => 'integer',
             'cancel_requested_at' => 'datetime',
+            'next_send_at' => 'datetime',
             'last_checked_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

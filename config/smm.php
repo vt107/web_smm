@@ -26,7 +26,15 @@ return [
         'sync_batch' => 100,
         // Không kiểm tra lại đơn vừa kiểm tra trong vòng X phút.
         'recheck_after_minutes' => 3,
-        // Chờ bao lâu (giây) trước khi gửi lại đơn lỗi, theo số lần đã thử.
+        // Timeout (giây) khi gửi đơn sang provider. Khách đặt trên web chờ tối đa chừng này
+        // → nginx fastcgi_read_timeout phải lớn hơn (xem docs/deploy-almalinux.md).
+        'send_timeout' => 60,
+        // Mass order gửi provider tối đa X giây, các dòng còn lại để cron orders:send gửi
+        // (X + send_timeout phải < timeout của Cloudflare 100s).
+        'mass_send_budget' => 30,
+        // Đơn chưa gửi được sau X phút (request bị ngắt giữa chừng…) → cron orders:send gửi lại.
+        'send_grace_minutes' => 2,
+        // Chờ bao lâu (giây) trước khi cron gửi lại đơn lỗi, theo số lần đã thử.
         'send_backoff' => [30, 60, 300, 900, 1800],
     ],
 

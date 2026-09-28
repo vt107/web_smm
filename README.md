@@ -33,7 +33,7 @@ docker compose exec app php artisan db:seed --class=DemoCatalogSeeder
 Dịch vụ mẫu ở chế độ *làm tay*: đơn đặt xong nằm ở "Chờ xử lý", vào `/admin/orders` → *Cập nhật trạng thái*
 để giả lập đơn chạy / hoàn thành / partial (hoàn tiền tự động).
 
-Provider giả lập để test luồng gửi đơn tự động (queue → provider → đồng bộ → hoàn tiền / refill), không tốn tiền thật:
+Provider giả lập để test luồng gửi đơn tự động (đặt đơn → provider → đồng bộ → hoàn tiền / refill), không tốn tiền thật:
 
 ```bash
 docker compose exec app php artisan db:seed --class=SandboxProviderSeeder   # cần SANDBOX_PROVIDER_ENABLED=true
@@ -92,6 +92,7 @@ sổ cái, khách hàng (cộng/trừ tiền), cấp bậc, ticket, tiền tệ,
 
 | Lệnh | Lịch | Mô tả |
 |---|---|---|
+| `orders:send` | 1 phút | Gửi lại đơn tạm chưa tới được provider (timeout/lỗi mạng) |
 | `orders:sync` | 5 phút | Đồng bộ trạng thái đơn, hoàn tiền partial/canceled |
 | `refills:sync` | 10 phút | Đồng bộ trạng thái refill |
 | `providers:sync {provider?}` | 1 giờ | Cập nhật giá vốn, min/max, tắt dịch vụ provider đã bỏ, số dư provider |

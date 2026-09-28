@@ -3,6 +3,7 @@
 namespace App\Services\Providers;
 
 use App\Exceptions\ProviderException;
+use App\Exceptions\ProviderRejectedException;
 use App\Models\Order;
 use App\Models\Provider;
 use Illuminate\Http\Client\ConnectionException;
@@ -51,7 +52,7 @@ class PerfectPanelClient implements ProviderClient
             $params['interval'] = $order->interval;
         }
 
-        $response = $this->call('add', $params + ($order->extra ?? []));
+        $response = $this->call('add', $params + ($order->extra ?? []), (int) config('smm.orders.send_timeout'));
 
         if (empty($response['order'])) {
             throw new ProviderException('Provider did not return an order ID');
@@ -126,12 +127,12 @@ class PerfectPanelClient implements ProviderClient
     }
 
     /** @return array<mixed> */
-    private function call(string $action, array $params = []): array
+    private function call(string $action, array $params = [], int $timeout = 30): array
     {
         try {
             $response = Http::asForm()
                 ->acceptJson()
-                ->timeout(30)
+                ->timeout($timeout)
                 ->post($this->provider->api_url, ['key' => $this->provider->api_key, 'action' => $action] + $params);
         } catch (ConnectionException $e) {
             throw new ProviderException("Connection failed: {$e->getMessage()}", previous: $e);
@@ -144,7 +145,7 @@ class PerfectPanelClient implements ProviderClient
         }
 
         if (isset($data['error']) && is_string($data['error'])) {
-            throw new ProviderException($data['error']);
+            throw new ProviderRejectedException($data['error']);
         }
 
         return $data;

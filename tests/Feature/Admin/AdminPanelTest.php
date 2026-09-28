@@ -17,6 +17,7 @@ use App\Services\OrderService;
 use App\Services\TicketService;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -42,6 +43,7 @@ class AdminPanelTest extends TestCase
     public function test_all_admin_pages_render(): void
     {
         Queue::fake();
+        Http::fake(['provider.test/*' => Http::response(['order' => 9001])]);
         $customer = User::factory()->withBalance(50)->create();
         $service = Service::factory()->create();
         $order = app(OrderService::class)->place($customer, $service, ['link' => 'https://x.com/a', 'quantity' => 100], OrderSource::Web);

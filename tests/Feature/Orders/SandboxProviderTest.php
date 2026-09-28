@@ -5,6 +5,7 @@ namespace Tests\Feature\Orders;
 use App\Enums\OrderSource;
 use App\Enums\OrderStatus;
 use App\Enums\RefillStatus;
+use App\Exceptions\SmmException;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\User;
@@ -98,10 +99,15 @@ class SandboxProviderTest extends TestCase
         $this->assertSame('100.000000', $this->user->fresh()->balance);
     }
 
-    public function test_rejected_order_is_refunded_after_retries(): void
+    public function test_rejected_web_order_is_refunded_immediately(): void
     {
-        $order = $this->place('104');
+        try {
+            $this->place('104');
+            $this->fail('Expected SmmException');
+        } catch (SmmException) {
+        }
 
+        $order = Order::query()->sole();
         $this->assertSame(OrderStatus::Canceled, $order->status);
         $this->assertSame('Not enough funds on balance', $order->provider_error);
         $this->assertSame('100.000000', $this->user->fresh()->balance);

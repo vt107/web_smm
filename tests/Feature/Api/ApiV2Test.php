@@ -11,9 +11,9 @@ use App\Models\Order;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 use Tests\Concerns\FakesProvider;
 use Tests\TestCase;
@@ -174,9 +174,34 @@ class ApiV2Test extends TestCase
             ->assertExactJson(['error' => 'Incorrect order ID']);
     }
 
+    public function test_add_order_rejected_by_provider_returns_error_and_refunds(): void
+    {
+        $this->providerResponses['add'] = ['error' => 'Incorrect link'];
+
+        $response = $this->api('add', ['service' => $this->service->id, 'link' => 'https://x.com/a', 'quantity' => 1000]);
+
+        $order = Order::query()->sole();
+        $response->assertExactJson(['error' => "Order #{$order->id} was rejected and refunded. Please check your link or try another service."]);
+        $this->assertSame(OrderStatus::Canceled, $order->status);
+        $this->assertSame('100.000000', $this->user->fresh()->balance);
+    }
+
+    public function test_add_order_on_provider_timeout_returns_temporary_order(): void
+    {
+        $this->providerResponses['add'] = fn () => throw new ConnectionException('timeout');
+
+        $response = $this->api('add', ['service' => $this->service->id, 'link' => 'https://x.com/a', 'quantity' => 1000]);
+
+        $order = Order::query()->sole();
+        $response->assertExactJson(['order' => $order->id]);
+        $this->assertSame(OrderStatus::Pending, $order->status);
+        $this->assertNotNull($order->next_send_at);
+        $this->assertSame('98.000000', $this->user->fresh()->balance);
+    }
+
     public function test_cancel_unsent_order_refunds_immediately(): void
     {
-        Queue::fake();
+        $this->providerResponses['add'] = fn () => throw new ConnectionException('timeout');
 
         $this->api('add', ['service' => $this->service->id, 'link' => 'https://x.com/a', 'quantity' => 1000]);
         $order = Order::query()->sole();

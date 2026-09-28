@@ -219,6 +219,7 @@ Index: `(category_id, status, sort)`, `(provider_id, provider_service_id)`.
 | cancel_requested_at | TIMESTAMP NULL | |
 | provider_error | TEXT NULL | Lỗi gần nhất từ provider |
 | send_attempts | TINYINT UNSIGNED default 0 | |
+| next_send_at | TIMESTAMP NULL | Lúc cron `orders:send` được gửi (lại) đơn chưa tới provider |
 | admin_note | TEXT NULL | Ghi chú nội bộ (dùng cho đơn làm tay) |
 | last_checked_at | TIMESTAMP NULL | Cron đồng bộ trạng thái |
 | completed_at | TIMESTAMP NULL | Tính `average_time` và hạn refill |
@@ -390,7 +391,7 @@ Dùng để tra khi reseller khiếu nại. Xoá tự động sau 30 ngày (`mod
 3. `DB::transaction`: `lockForUpdate()` user → kiểm tra số dư → trừ tiền, `total_spent += charge` → INSERT `transactions` (`order`) → INSERT `orders` (`pending`, snapshot `rate`, `discount_percent`).
 4. Xét lên cấp (xem bên dưới).
 5. Sau commit:
-   - `fulfillment = api` → dispatch job `SendOrderToProvider` → lưu `provider_order_id`, status `processing`. Lỗi → tăng `send_attempts`, retry có backoff. Hết `order_max_send_attempts` → status `canceled` + **tự hoàn 100%** + lưu `provider_error`.
+   - `fulfillment = api` → mọi đơn (web, API, mass) gửi provider **ngay trong request** (timeout `smm.orders.send_timeout`). Thành công → lưu `provider_order_id`, status `processing`. Provider từ chối (`{"error"}`) → `canceled` + **tự hoàn 100%** ngay, báo lỗi cho khách (kể cả khi cron gửi lại). Timeout/lỗi mạng/response lạ → đơn tạm `pending`, tăng `send_attempts`, đặt `next_send_at` theo backoff, cron `orders:send` gửi lại; hết `order_max_send_attempts` → `canceled` + **tự hoàn 100%** + lưu `provider_error`. Mass order chỉ gửi trong `smm.orders.mass_send_budget` giây, dòng còn lại để cron gửi.
    - `fulfillment = manual` → giữ `pending`, admin tự cập nhật `start_count`/`remains`/`status` trên trang admin (dùng chung logic hoàn tiền bên dưới).
 
 ### Lên cấp

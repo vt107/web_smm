@@ -3,6 +3,7 @@
 namespace App\Services\Providers;
 
 use App\Exceptions\ProviderException;
+use App\Exceptions\ProviderRejectedException;
 use App\Models\Order;
 
 interface ProviderClient
@@ -17,7 +18,8 @@ interface ProviderClient
     /**
      * Gửi đơn, trả về order ID bên provider.
      *
-     * @throws ProviderException
+     * @throws ProviderRejectedException provider từ chối rõ ràng
+     * @throws ProviderException lỗi mạng / timeout / response lạ – không chắc đơn đã được tạo hay chưa
      */
     public function addOrder(Order $order): string;
 

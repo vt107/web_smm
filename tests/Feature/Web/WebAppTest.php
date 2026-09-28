@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -25,6 +26,8 @@ class WebAppTest extends TestCase
         parent::setUp();
 
         Queue::fake();
+        // Provider không kết nối được → đơn web giữ Pending, chờ cron gửi lại.
+        Http::fake(['provider.test/*' => Http::failedConnection()]);
         $this->user = User::factory()->withBalance(100)->create(['username' => 'khachhang']);
     }
 

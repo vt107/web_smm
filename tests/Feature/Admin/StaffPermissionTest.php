@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\OrderService;
 use App\Services\TicketService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -34,6 +35,7 @@ class StaffPermissionTest extends TestCase
     public function test_support_can_view_orders_and_answer_tickets(): void
     {
         Queue::fake();
+        Http::fake(['provider.test/*' => Http::response(['order' => 9001])]);
         $customer = User::factory()->withBalance(50)->create();
         $order = app(OrderService::class)->place($customer, Service::factory()->create(), ['link' => 'https://x.com/a', 'quantity' => 100], OrderSource::Web);
         $ticket = app(TicketService::class)->open($customer, 'Help', TicketCategory::Other, null, 'Hi');

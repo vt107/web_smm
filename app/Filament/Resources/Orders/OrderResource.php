@@ -139,7 +139,7 @@ class OrderResource extends Resource
                 ->action(function (Order $record) {
                     try {
                         app(OrderService::class)->resend($record);
-                        Notification::make()->success()->title('Order queued for resending')->send();
+                        Notification::make()->success()->title('Order will be resent within a minute')->send();
                     } catch (SmmException $e) {
                         Notification::make()->danger()->title($e->localized())->send();
                     }

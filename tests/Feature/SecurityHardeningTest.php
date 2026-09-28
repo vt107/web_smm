@@ -7,7 +7,7 @@ use App\Models\Order;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Http;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -18,7 +18,7 @@ class SecurityHardeningTest extends TestCase
 
     public function test_order_link_rejects_script_urls(): void
     {
-        Queue::fake();
+        Http::fake(['provider.test/*' => Http::response(['order' => 9001])]);
         $user = User::factory()->withBalance(10)->create();
         $service = Service::factory()->create();
         $key = $user->generateApiKey();

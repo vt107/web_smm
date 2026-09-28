@@ -5,19 +5,25 @@ namespace App\Services;
 use App\Enums\OrderSource;
 use App\Enums\OrderStatus;
 use App\Enums\RefillStatus;
+use App\Enums\SendResult;
+use App\Enums\TelegramEvent;
 use App\Enums\TransactionType;
+use App\Exceptions\ProviderException;
+use App\Exceptions\ProviderRejectedException;
 use App\Exceptions\SmmException;
 use App\Jobs\CancelOrderAtProvider;
-use App\Jobs\SendOrderToProvider;
 use App\Jobs\SendRefillToProvider;
 use App\Models\Order;
 use App\Models\OrderRefill;
 use App\Models\Service;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\Providers\ProviderManager;
 use App\Support\Money;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class OrderService
 {
@@ -26,16 +32,35 @@ class OrderService
     public function __construct(
         private readonly BalanceService $balance,
         private readonly PricingService $pricing,
+        private readonly ProviderManager $providers,
     ) {}
 
     /**
-     * Đặt 1 đơn: validate → trừ tiền + tạo đơn trong 1 transaction → gửi provider sau khi commit.
+     * Đặt 1 đơn (web, API, mass đều qua đây): validate → trừ tiền + tạo đơn trong 1 transaction →
+     * gửi provider ngay trong request. Provider từ chối → huỷ + hoàn tiền, báo lỗi cho khách;
+     * timeout/lỗi mạng → đơn tạm (Pending), cron orders:send gửi lại.
      *
      * @param  array<string, mixed>  $input  link, quantity, runs, interval + tham số riêng theo loại dịch vụ
      *
      * @throws SmmException
      */
     public function place(User $user, Service $service, array $input, OrderSource $source = OrderSource::Web): Order
+    {
+        $order = $this->create($user, $service, $input, $source);
+
+        if (! $service->isManual()) {
+            $this->throwIfRejected($order, $this->sendToProvider($order));
+        }
+
+        return $order->refresh();
+    }
+
+    /**
+     * Tạo đơn + trừ tiền, chưa gửi provider.
+     *
+     * @throws SmmException
+     */
+    private function create(User $user, Service $service, array $input, OrderSource $source): Order
     {
         if (! $user->isActive()) {
             throw new SmmException('Your account is suspended');
@@ -73,6 +98,8 @@ class OrderService
                 'interval' => $runs ? (int) $data['interval'] : null,
                 'extra' => $this->extractExtra($service, $data),
                 'source' => $source,
+                // Lưới an toàn: chưa gửi được sau X phút thì cron gửi lại.
+                'next_send_at' => $service->isManual() ? null : now()->addMinutes((int) config('smm.orders.send_grace_minutes')),
             ])->save();
 
             $this->balance->change($user, Money::sub(0, $charge), TransactionType::Order, $order, "Order #{$order->id}");
@@ -80,11 +107,79 @@ class OrderService
             return $order;
         });
 
-        if (! $service->isManual()) {
-            SendOrderToProvider::dispatch($order->id)->afterCommit();
+        return $order;
+    }
+
+    /** @throws SmmException */
+    private function throwIfRejected(Order $order, SendResult $result): void
+    {
+        if ($result === SendResult::Rejected) {
+            throw new SmmException('Order #:id was rejected and refunded. Please check your link or try another service.', ['id' => $order->id]);
+        }
+    }
+
+    /**
+     * Gửi đơn sang provider – dùng khi đặt đơn và ở cron orders:send.
+     * Provider từ chối rõ ràng → huỷ + hoàn tiền ngay. Timeout/lỗi mạng/response lạ → tăng send_attempts,
+     * hẹn giờ cho cron gửi lại (smm.orders.send_backoff); hết order_max_send_attempts → huỷ + hoàn tiền.
+     */
+    public function sendToProvider(Order $order): SendResult
+    {
+        // Lâu hơn send_timeout để khoá không hết hạn khi còn đang chờ provider.
+        $lock = Cache::lock("order-send:{$order->id}", (int) config('smm.orders.send_timeout') + 60);
+
+        if (! $lock->get()) {
+            return SendResult::Skipped;
         }
 
-        return $order;
+        try {
+            $order = Order::query()->with(['service', 'provider'])->find($order->id);
+
+            if (! $order
+                || $order->status !== OrderStatus::Pending
+                || $order->isSentToProvider()
+                || $order->cancel_requested_at) {
+                return SendResult::Skipped;
+            }
+
+            try {
+                if (! $order->provider) {
+                    throw new ProviderException('Provider not found');
+                }
+
+                $providerOrderId = $this->providers->for($order->provider)->addOrder($order);
+            } catch (ProviderRejectedException $e) {
+                $this->recordSendFailure($order, $e->getMessage(), rejected: true);
+
+                return SendResult::Rejected;
+            } catch (ProviderException $e) {
+                $this->recordSendFailure($order, $e->getMessage());
+
+                return SendResult::Failed;
+            }
+
+            $updated = Order::query()
+                ->whereKey($order->id)
+                ->where('status', OrderStatus::Pending)
+                ->whereNull('provider_order_id')
+                ->update([
+                    'provider_order_id' => $providerOrderId,
+                    'status' => OrderStatus::Processing,
+                    'provider_error' => null,
+                    'send_attempts' => $order->send_attempts + 1,
+                    'next_send_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+            if ($updated === 0) {
+                // Đơn đã bị huỷ/hoàn tiền trong lúc đang gửi → huỷ luôn bên provider và báo admin.
+                $this->cancelOrphan($order, $providerOrderId);
+            }
+
+            return SendResult::Sent;
+        } finally {
+            $lock->release();
+        }
     }
 
     /**
@@ -101,6 +196,11 @@ class OrderService
             throw new SmmException('Maximum :max orders per request', ['max' => self::MASS_ORDER_MAX_LINES]);
         }
 
+        // Giữ tổng thời gian request dưới timeout của nginx/Cloudflare: provider vừa timeout, hoặc đã gửi
+        // quá mass_send_budget giây → các dòng còn lại tạo đơn tạm, cron orders:send gửi sau.
+        $deadline = microtime(true) + (int) config('smm.orders.mass_send_budget');
+        $down = [];
+
         $results = [];
         foreach ($lines as $i => $line) {
             $parts = array_map('trim', explode('|', $line));
@@ -111,7 +211,17 @@ class OrderService
                 }
 
                 $service = Service::query()->find((int) $parts[0]) ?? throw new SmmException('Invalid service ID');
-                $order = $this->place($user, $service, ['link' => $parts[1], 'quantity' => $parts[2]], OrderSource::Mass);
+                $order = $this->create($user, $service, ['link' => $parts[1], 'quantity' => $parts[2]], OrderSource::Mass);
+
+                if (! $service->isManual() && ! isset($down[$order->provider_id]) && microtime(true) < $deadline) {
+                    $result = $this->sendToProvider($order);
+
+                    if ($result === SendResult::Failed) {
+                        $down[$order->provider_id] = true;
+                    }
+
+                    $this->throwIfRejected($order, $result);
+                }
 
                 $results[] = ['line' => $i + 1, 'order' => $order->id, 'error' => null];
             } catch (SmmException $e) {
@@ -307,9 +417,56 @@ class OrderService
             throw new SmmException('Only pending orders that were not sent can be resent');
         }
 
-        $order->forceFill(['send_attempts' => 0, 'provider_error' => null, 'cancel_requested_at' => null])->save();
+        // cron orders:send gửi trong vòng 1 phút.
+        $order->forceFill(['send_attempts' => 0, 'provider_error' => null, 'cancel_requested_at' => null, 'next_send_at' => now()])->save();
+    }
 
-        SendOrderToProvider::dispatch($order->id);
+    /** Ghi lỗi gửi đơn. Provider từ chối hoặc hết số lần thử → huỷ + hoàn tiền + báo admin; còn lại hẹn giờ gửi lại. */
+    private function recordSendFailure(Order $order, string $error, bool $rejected = false): void
+    {
+        $attempts = $order->send_attempts + 1;
+        $backoff = config('smm.orders.send_backoff');
+
+        $order->forceFill([
+            'send_attempts' => $attempts,
+            'provider_error' => Str::limit($error, 1000),
+            'next_send_at' => now()->addSeconds($backoff[min($attempts - 1, count($backoff) - 1)]),
+        ])->save();
+
+        if (! $rejected && $attempts < (int) Setting::get('order_max_send_attempts')) {
+            return;
+        }
+
+        $this->applyStatus($order, OrderStatus::Canceled);
+
+        app(TelegramNotifier::class)->notify(
+            TelegramEvent::OrderFailed,
+            implode("\n", [
+                "❌ <b>Order #{$order->id} canceled</b> – "
+                    .($rejected ? 'provider rejected it' : "could not reach provider after {$attempts} attempts").' (customer refunded)',
+                'Provider: '.e($order->provider?->name ?? '—').' · service #'.$order->service_id,
+                'Error: '.e(Str::limit($error, 200)),
+                url("/admin/orders/{$order->id}"),
+            ]),
+            // Cùng 1 lỗi của 1 provider (vd hết tiền, reseller gửi hàng loạt link sai) chỉ báo 1 lần / 30 phút.
+            $rejected ? 'order-rejected:'.$order->provider_id.':'.md5($error) : null,
+            30,
+        );
+    }
+
+    private function cancelOrphan(Order $order, string $providerOrderId): void
+    {
+        try {
+            $this->providers->for($order->provider)->cancel([$providerOrderId]);
+        } catch (ProviderException) {
+            // Báo admin xử lý tay bên dưới.
+        }
+
+        app(TelegramNotifier::class)->notify(TelegramEvent::OrderFailed, implode("\n", [
+            "⚠️ <b>Order #{$order->id} was canceled while being sent</b>",
+            'Provider: '.e($order->provider->name).' · provider order #'.e($providerOrderId),
+            'A cancel request was sent. Check the provider panel and cancel it manually if it is still running.',
+        ]));
     }
 
     private function finalize(Order $order, OrderStatus $status, int $total): void

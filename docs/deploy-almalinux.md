@@ -288,7 +288,8 @@ server {
         # Khách luôn vào qua HTTPS của Cloudflare ("Always Use HTTPS") → báo cho PHP biết là HTTPS
         fastcgi_param HTTPS on;
         fastcgi_hide_header X-Powered-By;
-        fastcgi_read_timeout 60;
+        # Đơn web chờ provider tối đa smm.orders.send_timeout (60s) → để dư
+        fastcgi_read_timeout 120;
     }
 
     # Chặn file ẩn (.env, .git…) và mọi file .php khác index.php
@@ -324,7 +325,7 @@ firewall-cmd --list-all
 
 ## 11. Queue worker và scheduler
 
-Queue worker (gửi đơn sang provider, huỷ, refill) chạy nền bằng systemd:
+Queue worker (huỷ đơn, refill, thông báo Telegram) chạy nền bằng systemd:
 
 ```bash
 cat > /etc/systemd/system/smm-queue.service <<'EOF'

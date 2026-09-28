@@ -3,6 +3,7 @@
 use App\Models\ApiLog;
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::command('orders:send')->everyMinute()->withoutOverlapping()->runInBackground();
 Schedule::command('orders:sync')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('refills:sync')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('providers:sync')->hourly()->withoutOverlapping();

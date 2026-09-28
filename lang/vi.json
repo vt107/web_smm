@@ -18,6 +18,7 @@
     "Order amount is too small": "Giá trị đơn quá nhỏ",
     "Order cannot be canceled": "Đơn này không thể huỷ",
     "Order is being processed, please try again": "Đơn đang được xử lý, vui lòng thử lại sau giây lát",
+    "Order #:id was rejected and refunded. Please check your link or try another service.": "Đơn #:id bị từ chối và đã được hoàn tiền. Vui lòng kiểm tra lại link hoặc thử dịch vụ khác.",
     "Order is not completed yet": "Đơn chưa hoàn thành",
     "Order not found: :ids": "Không tìm thấy đơn: :ids",
     "Payment method is not available": "Kênh nạp tiền không khả dụng",
