@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\NavGroup;
+use App\Filament\Pages\Auth\Login;
 use App\Services\TwoFactorService;
 use App\Support\Site;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
@@ -30,7 +31,8 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            // Chế độ demo: điền sẵn tài khoản (config/demo.php).
+            ->login(Login::class)
             // Trang Profile: đổi mật khẩu + bật bảo mật 2 lớp (không bắt buộc).
             ->profile(isSimple: false)
             ->multiFactorAuthentication([

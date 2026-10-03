@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\BalanceService;
+use App\Support\Demo\DemoMode;
 use App\Support\Money;
 use Illuminate\Database\Seeder;
 
@@ -28,7 +29,8 @@ class DemoCatalogSeeder extends Seeder
 
     public function run(): void
     {
-        if (app()->isProduction()) {
+        // Bản demo (DEMO_MODE=true) chạy được cả khi APP_ENV=production: DemoSeeder dùng lại seeder này.
+        if (app()->isProduction() && ! DemoMode::enabled()) {
             $this->command?->error('DemoCatalogSeeder chỉ dùng để test – không chạy trên production.');
 
             return;
@@ -49,7 +51,11 @@ class DemoCatalogSeeder extends Seeder
         }
 
         $this->command?->info("Seeded {$count} demo services.");
-        $this->seedDemoCustomer();
+
+        // Bản demo: DemoSeeder tự tạo khách demo@example.com kèm lịch sử nạp / đơn đầy đủ.
+        if (! DemoMode::enabled()) {
+            $this->seedDemoCustomer();
+        }
     }
 
     /**

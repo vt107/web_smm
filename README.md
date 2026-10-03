@@ -50,6 +50,26 @@ Chạy test (dùng database `smm_testing`):
 docker compose exec app php artisan test
 ```
 
+## Chế độ demo (chỉ xem)
+
+Bật `DEMO_MODE=true` (cấu hình ở `config/demo.php`) để deploy bản giới thiệu cho khách xem:
+
+- Mọi lệnh ghi SQL từ request web bị chặn (`App\Support\Demo\DemoMode`), form POST bị chặn trước controller,
+  Livewire/Filament hiện thông báo thay vì lỗi; email từ web bị chặn. Artisan / queue / scheduler / test không bị chặn.
+- API `/api/v2`: action đọc (`services`, `balance`, `status`, `refill_status`) vẫn chạy, `add` / `refill` / `cancel`
+  trả `{"error": ...}`, không ghi `api_logs`. Webhook SePay trả 403. Scheduler bỏ qua các lệnh gọi provider / ví / tỉ giá.
+- Nút **Demo** góc trái dưới mọi trang (kể cả admin) liệt kê khu vực + tài khoản, đăng nhập nhanh qua `/demo/switch/{key}`.
+  Tài khoản (mật khẩu `password`): `admin@example.com` (admin), `support@example.com` (nhân viên Support),
+  `demo@example.com` (khách cấp Gold), `reseller@example.com` (reseller Diamond, API key
+  `demo1234demo1234demo1234demo1234demo1234`).
+- `php artisan demo:reset --force` = `migrate:fresh --seed` với `DemoSeeder` (~90 ngày dữ liệu, ngày giờ tương đối so với
+  lúc chạy; provider giả). Scheduler tự chạy lúc `DEMO_RESET_AT` mỗi ngày. Khi DEMO_MODE=false, seeder như cũ (`AdminUserSeeder`).
+- Đổi `DEMO_MODE` trên server đã `php artisan optimize` thì chạy lại `optimize` (route `/demo/*` và middleware panel được cache).
+
+Khi thêm tính năng mới: thao tác có tác dụng phụ ngoài DB (gọi provider / Telegram / ngân hàng, lưu file...) phải gọi
+`DemoMode::abortIfEnabled()` ở đầu action; lệnh ghi bắt buộc khi chỉ xem trang thì dùng `DemoMode::bypass()` hoặc
+whitelist hẹp trong `config/demo.php`; bổ sung dữ liệu cho tính năng trong `DemoSeeder`.
+
 ## Cấu trúc chính
 
 | Thư mục | Nội dung |

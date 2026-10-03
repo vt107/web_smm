@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Models\User;
 use App\Services\TelegramNotifier;
+use App\Support\Demo\DemoMode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -64,7 +65,11 @@ class AuthController extends Controller
     {
         Auth::login($user, $remember);
         $request->session()->regenerate();
-        $user->forceFill(['last_login_at' => now(), 'last_login_ip' => $request->ip()])->save();
+
+        // Bản demo chỉ xem: không ghi lần đăng nhập cuối (dữ liệu mẫu giữ nguyên tới lần reset).
+        if (! DemoMode::guarding()) {
+            $user->forceFill(['last_login_at' => now(), 'last_login_ip' => $request->ip()])->save();
+        }
 
         return redirect()->intended(route('dashboard'));
     }

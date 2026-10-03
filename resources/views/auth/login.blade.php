@@ -1,3 +1,4 @@
+@php($demoLogin = \App\Support\Demo\DemoMode::credentials('customer'))
 <x-layouts.guest title="Log in">
     <h2 class="mb-6 text-xl font-semibold">Log in to your account</h2>
     @if (session('status'))
@@ -7,12 +8,12 @@
         @csrf
         <div>
             <label class="label" for="email">Email or username</label>
-            <input class="input" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
+            <input class="input" id="email" name="email" value="{{ old('email', $demoLogin['email'] ?? '') }}" required autofocus autocomplete="username">
             @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
         <div>
             <label class="label" for="password">Password</label>
-            <input class="input" id="password" name="password" type="password" required autocomplete="current-password">
+            <input class="input" id="password" name="password" type="password" value="{{ $demoLogin['password'] ?? '' }}" required autocomplete="current-password">
         </div>
         <div class="flex items-center justify-between">
             <label class="flex items-center gap-2 text-sm text-slate-600">

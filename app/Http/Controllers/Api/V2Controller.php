@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Services\CatalogService;
 use App\Services\OrderService;
+use App\Support\Demo\DemoMode;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,6 +53,11 @@ class V2Controller extends Controller
                 throw new SmmException('Your account is suspended');
             }
 
+            // Bản demo chỉ xem: action ghi (đặt / refill / huỷ đơn) trả lỗi đúng format API, action đọc vẫn chạy.
+            if (in_array($action, self::LOGGED_ACTIONS, true) && DemoMode::guarding()) {
+                throw new SmmException(DemoMode::message());
+            }
+
             $payload = match ($action) {
                 'services' => $this->services($user),
                 'add' => $this->add($user, $request),
@@ -67,7 +73,8 @@ class V2Controller extends Controller
             $payload = ['error' => $error];
         }
 
-        if ($error !== null || in_array($action, self::LOGGED_ACTIONS, true)) {
+        // Bản demo không ghi log (trang API logs dùng dữ liệu mẫu).
+        if (! DemoMode::guarding() && ($error !== null || in_array($action, self::LOGGED_ACTIONS, true))) {
             ApiLog::query()->create([
                 'user_id' => $user?->id,
                 'action' => Str::limit($action, 20, ''),

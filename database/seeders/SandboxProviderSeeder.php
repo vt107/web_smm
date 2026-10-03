@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Provider;
 use App\Models\Service;
 use App\Sandbox\SandboxCatalog;
+use App\Support\Demo\DemoMode;
 use App\Support\Money;
 use Illuminate\Database\Seeder;
 
@@ -21,7 +22,8 @@ class SandboxProviderSeeder extends Seeder
 {
     public function run(): void
     {
-        if (app()->isProduction()) {
+        // Bản demo (DEMO_MODE=true) chạy được cả khi APP_ENV=production: DemoSeeder dùng lại seeder này.
+        if (app()->isProduction() && ! DemoMode::enabled()) {
             $this->command?->error('SandboxProviderSeeder chỉ dùng để test – không chạy trên production.');
 
             return;

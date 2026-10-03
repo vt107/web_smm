@@ -8,6 +8,7 @@ use App\Filament\NavGroup;
 use App\Http\Controllers\Public\LandingController;
 use App\Models\Setting;
 use App\Services\TelegramNotifier;
+use App\Support\Demo\DemoMode;
 use App\Support\MailSettings;
 use App\Support\Site;
 use BackedEnum;
@@ -80,6 +81,8 @@ class WebsiteSettings extends Page
                 ->icon(Heroicon::OutlinedChatBubbleOvalLeftEllipsis)
                 ->color('gray')
                 ->action(function (TelegramNotifier $telegram) {
+                    DemoMode::abortIfEnabled(); // gửi tin Telegram thật
+
                     if (! $telegram->isConfigured()) {
                         Notification::make()->warning()->title('Please fill in and save the Telegram bot token and chat IDs first.')->send();
 
@@ -101,6 +104,8 @@ class WebsiteSettings extends Page
                     TextInput::make('to')->label('Send to')->email()->required()->default(fn () => auth()->user()->email),
                 ])
                 ->action(function (array $data) {
+                    DemoMode::abortIfEnabled(); // gửi email thật
+
                     if (! MailSettings::isConfigured()) {
                         Notification::make()->warning()->title('Please fill in and save the Email (SMTP) settings first.')->send();
 
@@ -215,6 +220,8 @@ class WebsiteSettings extends Page
                                         ->label('Find chat IDs')
                                         ->icon(Heroicon::OutlinedMagnifyingGlass)
                                         ->action(function (TelegramNotifier $telegram, Get $get) {
+                                            DemoMode::abortIfEnabled(); // gọi API Telegram
+
                                             try {
                                                 $token = filled($get('telegram_bot_token')) ? trim($get('telegram_bot_token')) : null;
                                                 $chats = $telegram->discoverChats($token);

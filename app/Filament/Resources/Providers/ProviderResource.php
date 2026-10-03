@@ -10,6 +10,7 @@ use App\Filament\Resources\Providers\Pages\ManageProviders;
 use App\Filament\Support\Fmt;
 use App\Models\Provider;
 use App\Services\Providers\ServiceSyncService;
+use App\Support\Demo\DemoMode;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -76,6 +77,8 @@ class ProviderResource extends Resource
                         ->label('Sync prices & balance')
                         ->icon(Heroicon::OutlinedArrowPath)
                         ->action(function (Provider $record) {
+                            DemoMode::abortIfEnabled(); // gọi API provider
+
                             try {
                                 $stats = app(ServiceSyncService::class)->sync($record);
                                 Notification::make()->success()->title('Synced')
@@ -93,6 +96,8 @@ class ProviderResource extends Resource
                                 ->placeholder('Leave empty to import all. Comma separated.'),
                         ])
                         ->action(function (Provider $record, array $data) {
+                            DemoMode::abortIfEnabled(); // gọi API provider
+
                             $only = filled($data['only'] ?? null)
                                 ? array_values(array_filter(array_map('trim', preg_split('/[\s,]+/', $data['only']))))
                                 : null;
